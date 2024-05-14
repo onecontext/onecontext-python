@@ -88,7 +88,7 @@ also ensure that we never write embeddings from a different model to this index.
 
 We are ready to deploy our first ingestion pipeline.
 
-We define the pipeline in a yaml file: `ingestion.yaml`
+Create a [`ingestion.yaml`](examples/ingestion.yaml) with the following content:
 
 ```yaml
 steps:
@@ -123,12 +123,14 @@ steps:
 ```
 
 ```python
-ingestion_pipeline = oc.deploy_pipeline("my_ingestion_pipeline", pipeline_yaml_path="./ingestion.yaml")
+oc.deploy_pipeline("my_ingestion_pipeline", pipeline_yaml_path="./ingestion.yaml")
 ```
 
 ## Create a query Pipeline
 
 Having indexes the files we now create a two-step pipeline to query the vector index.
+
+Create a [`query.yaml`](examples/query.yaml) with the following content:
 
 ```yaml
 steps:
