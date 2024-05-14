@@ -1,18 +1,19 @@
-from onecontext import OneContext
-
-# Note ingestion.yaml and query.yaml are required to run this example
+# Note that ingestion.yaml and query.yaml are required to run this example
 # copy from the examples directory or
 # clone this repo & `cd example`
-
-# ONECONTEXT_API_KEY env variable is used when no provied explicitly
+# You will alos need an api key
 # you can get one here: https://onecontext.ai/
+
+from onecontext import OneContext
+
+# ONECONTEXT_API_KEY env variable is used when not provied in arguments
 oc = OneContext()
 
 # A knowledge base is a collection of files.
-# to create a create knowledgebase:
 knowledgebase = oc.create_knowledgebase(name="my_kb")
 
-# Create a vector index to store the vectors
+# A vector index is a collection of chunks with embeddings
+# specify the model at creation to configure the vector index
 oc.create_index("my_vector_index", model="BAAI/bge-base-en-v1.5")
 
 # deploy an ingesiton pipeline that watches the knowledge base we just ceated
@@ -24,7 +25,6 @@ query_pipeline = oc.deploy_pipeline("basic_query", "./query.yaml")
 # upload a file to an existing knowledgebase like so:
 knowledgebase = oc.KnowledgeBase(name="my_kb")
 knowledgebase.upload_file("babbage.pdf")
-
 
 # this kicks of a run for every connected pipeline:
 # list runs to see the current state of each run
