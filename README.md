@@ -14,8 +14,7 @@
 ## LLM Context as a Service
 
 OneContext makes it really easy and fast to augment your LLM application with your own data
-in a few API calls. Upload your data to a `Knowledge Base` and directly it
-query with natural language to retrieve relevant context for your LLM application.
+in a few API calls. Upload your data to a `Knowledge Base` query with natural language to retrieve relevant context for your LLM application.
 
 We manage the full document processing and retrieval pipeline so that you don't have to:
 
@@ -41,9 +40,10 @@ results relevant to the query.
 
 ## Quick Start
 
-```console
+Install the package with `pip`:
+
+```shell
 pip install onecontext
-export ONECONTEXT_API_KEY=<your api key>
 ```
 
 
@@ -52,9 +52,11 @@ export ONECONTEXT_API_KEY=<your api key>
 from onecontext import OneContext
 
 # reads api_key from ONECONTEXT_API_KEY env variable
-oc = OneContext()
+oc = OneContext(api_key="<ONECONTEXT_API_KEY>")
 
 ```
+
+You can get an api key [here](https://onecontext.ai/).
 
 ### Create your first knowledge base
 
