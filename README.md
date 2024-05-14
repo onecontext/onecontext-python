@@ -51,9 +51,8 @@ pip install onecontext
 
 from onecontext import OneContext
 
-# reads api_key from ONECONTEXT_API_KEY env variable
+# if api_key is omitted, ONECONTEXT_API_KEY env variable is used
 oc = OneContext(api_key="<ONECONTEXT_API_KEY>")
-
 ```
 
 You can get an api key [here](https://onecontext.ai/).
