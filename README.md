@@ -46,7 +46,7 @@ Install the package with `pip`:
 pip install onecontext
 ```
 
-> **Note**
+> **Note:**
 > The full example can be seen in [`quickstart.py`](examples/quickstart.py)
 
 
