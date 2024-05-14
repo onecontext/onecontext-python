@@ -128,7 +128,7 @@ Then deploy like so:
 oc.deploy_pipeline("my_ingestion_pipeline", pipeline_yaml_path="./ingestion.yaml")
 ```
 
-## Create a query Pipeline
+### Create a query Pipeline
 
 To query the vector index we need to define a query pipeline.
 
@@ -173,7 +173,7 @@ query_pipeline = oc.deploy_pipeline("basic_query", "./query.yaml")
 
 ```
 
-## Uploading Files:
+### Uploading Files:
 
 Upload files to an existing knowledge base:
 
@@ -193,7 +193,7 @@ oc.list_runs()
 ```
 
 
-## Run the query Pipeline
+### Run the query Pipeline
 
 Once the ingestion pipeline run is complete we can query the index for relevant chunks
 using the query pipeline we created earlier.
