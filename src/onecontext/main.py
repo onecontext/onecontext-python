@@ -8,7 +8,7 @@ from onecontext.pipeline import Pipeline
 
 
 class OneContext:
-    def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.onecontext.ai/v1"):
+    def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.onecontext.ai/v1/"):
         if api_key is None:
             api_key = os.environ.get("ONECONTEXT_API_KEY")
         if api_key is None:

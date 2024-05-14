@@ -46,6 +46,9 @@ Install the package with `pip`:
 pip install onecontext
 ```
 
+> **Note**
+> The full example can be seen in [`quickstart.py`](examples/quickstart.py)
+
 
 ``` python
 
@@ -59,12 +62,10 @@ You can get an api key [here](https://onecontext.ai/).
 
 ### Create your first knowledge base
 
-A knowledge base is a collection of files.  We create our first knowledge base and
-upload a file:
+A knowledge base is a collection of files. To create a knowledge base:
 
 ``` python
 knowledgebase = oc.create_knowledgebase(name="my_kb")
-knowledgebase.upload_file("my_file.txt")
 ```
 
 ### Create a Vector Index
@@ -83,7 +84,7 @@ also ensure that we never write embeddings from a different model to this index.
 
 
 
-## Create an ingestion Pipeline
+### Create an ingestion Pipeline
 
 We are ready to deploy our first ingestion pipeline.
 
@@ -121,13 +122,15 @@ steps:
     depends_on: [sentence-transformers]
 ```
 
+Then deploy like so:
+
 ```python
 oc.deploy_pipeline("my_ingestion_pipeline", pipeline_yaml_path="./ingestion.yaml")
 ```
 
 ## Create a query Pipeline
 
-Having indexes the files we now create a two-step pipeline to query the vector index.
+To query the vector index we need to define a query pipeline.
 
 Create a [`query.yaml`](examples/query.yaml) with the following content:
 
@@ -170,7 +173,30 @@ query_pipeline = oc.deploy_pipeline("basic_query", "./query.yaml")
 
 ```
 
-### Run the query Pipeline
+## Uploading Files:
+
+Upload files to an existing knowledge base:
+
+```python
+knowledgebase = oc.KnowledgeBase(name="my_kb")
+knowledgebase.upload_file("babbage.pdf")
+```
+
+When a file is uploaded any pipelines connected to the KnowledgeBase will be
+triggered to run.
+
+List runs to see the current state of each run:
+
+
+```python
+oc.list_runs()
+```
+
+
+## Run the query Pipeline
+
+Once the ingestion pipeline run is complete we can query the index for relevant chunks
+using the query pipeline we created earlier.
 
 We can run the query pipeline and override any of default the step arguments defined in our pipeline at runtime by passing
 a dictionary of the form:
@@ -179,7 +205,7 @@ a dictionary of the form:
 
 
 ``` py
-query = "How does a tranformer work?"
+query = "What are consequences of inventing a computer?"
 retreiver_top_k = 50
 top_k = 5
 
