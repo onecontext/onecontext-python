@@ -1,7 +1,7 @@
 # Note that ingestion.yaml and query.yaml are required to run this example
 # copy from the examples directory or
 # clone this repo & `cd example`
-# You will alos need an api key
+# You will also need an api key
 # you can get one here: https://onecontext.ai/
 
 from onecontext import OneContext

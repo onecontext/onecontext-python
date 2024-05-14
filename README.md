@@ -47,7 +47,7 @@ pip install onecontext
 ```
 
 > **Note:**
-> The full example can be seen in [`quickstart.py`](examples/quickstart.py)
+> If you prefer to jump right in the full example code is in [`quickstart.py`](examples/quickstart.py)
 
 
 ``` python
