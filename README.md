@@ -179,7 +179,7 @@ a dictionary of the form:
 
 
 ``` py
-query = "What is the the meaning of life"
+query = "How does a tranformer work?"
 retreiver_top_k = 50
 top_k = 5
 
