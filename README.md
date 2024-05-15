@@ -201,17 +201,17 @@ using the query pipeline we created earlier.
 We can run the query pipeline and override any of default the step arguments defined in our pipeline at runtime by passing
 a dictionary of the form:
 
-    `{step_name : {step_arg: step_arg_value}`.
+    `{step_name : {step_arg: step_arg_value}}`.
 
 
 ``` py
 query = "What are consequences of inventing a computer?"
-retreiver_top_k = 50
+retriever_top_k = 50
 top_k = 5
 
 override_args = {
     "retriever": {
-        "top_k": retreiver_top_k,
+        "top_k": retriever_top_k,
         "query": query,
     },
     "reranker": {"top_k": top_k, "query": query},

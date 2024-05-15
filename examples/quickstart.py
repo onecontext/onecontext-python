@@ -32,14 +32,14 @@ print(oc.list_runs())
 
 # once the ingestion_pipeline run is complete we can query the index for relevant chunks
 query = "What are consequences of inventing a computer?"
-retreiver_top_k = 50
+retriever_top_k = 50
 top_k = 5
 
 # overide the step_args for the two steps of the query pipeline by
 # passing dict in the form {step_name: step_args_dict}
 override_args = {
     "retriever": {
-        "top_k": retreiver_top_k,
+        "top_k": retriever_top_k,
         "query": query,
     },
     "reranker": {"top_k": top_k, "query": query},
