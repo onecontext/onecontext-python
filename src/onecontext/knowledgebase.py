@@ -13,12 +13,19 @@ SUPPORTED_FILE_TYPES = (".pdf", ".docx", ".txt", ".md")
 
 @dataclass
 class KnowledgeBase:
-    """The KnowledgeBase class provides self._client access to a given knowledge base.
-    knowledge bases names must unique.
+    """
+    A class representing a knowledge base client to interact with an API for file management.
 
-    Args:
-        name (str): The name of the knowledge base
-        id (str): the id, this will be returned by the self._client
+    Attributes
+    ----------
+    name : str
+        The name of the knowledge base.
+    _client : ApiClient
+        The API client to make requests to the knowledge base.
+    _urls : URLS
+        Object containing URL templates for API requests.
+    id : Optional[str], optional
+        The identifier for the knowledge base, by default None.
     """
 
     name: str
@@ -29,6 +36,33 @@ class KnowledgeBase:
     def list_files(
         self, skip=0, limit=20, sort="date_created", metadata_filters=None, date_created_gte=None, date_created_lte=None
     ) -> List[Dict[str, Any]]:
+        """
+        Lists files in the knowledge base with various filtering, sorting, and pagination options.
+
+        Parameters
+        ----------
+        skip : int, optional
+            The number of files to skip (default is 0).
+        limit : int, optional
+            The maximum number of files to return (default is 20).
+        sort : str, optional
+            The field to sort by (default is "date_created").
+            Reverse with "-date_created"
+        metadata_filters : dict, optional
+            A dictionary of metadata fields to filter results (default is None).
+        date_created_gte : datetime, optional
+            The minimum creation date of files to list (default is None).
+            ISO 8601 Date Format Example: "2023-01-20T13:01:02Z"
+        date_created_lte : datetime, optional
+            The maximum creation date of files to list (default is None).
+            ISO 8601 Date Format Example: "2023-01-20T13:01:02Z"
+
+        Returns
+        -------
+        List[Dict[str, Any]]
+            A list of dictionaries, each representing a file with its metadata.
+
+        """
         files: List[Dict[str, Any]] = self._client.post(
             self._urls.files(),
             json={
@@ -43,34 +77,57 @@ class KnowledgeBase:
         )
         return files
 
-    # %%
-
-    # class FileQueryParams(BaseModel):
-    #     knowledgebase_name: str
-    #     skip: int = 0
-    #     limit: int = 10
-    #     sort: str = "date_created"
-    #     metadata_json: dict | None = None
-    #     date_created_gte: datetime | None = None
-    #     date_created_lte: datetime | None = None
-
-    # %%
     def delete_files(self, file_names: list[str]) -> None:
+        """
+        Deletes a list of files from the knowledge base.
+
+        Parameters
+        ----------
+        file_names : list[str]
+            A list of filenames as strings that are to be deleted.
+
+        Returns
+        -------
+        None
+
+        """
         self._client.delete(
-            self._urls.knowledge_base_files(),
+            self._urls.files(),
             params={"file_names": file_names},
         )
 
-    def upload_urls(self, upload_urls: list[str]):
-        data = {"knowledgebase_name": self.name, "self._urls": upload_urls}
-        run_ids = self._client.post(self._urls.upload_urls(), json=data)
-        return run_ids
-
     def upload_file(self, file_path: Union[str, Path], metadata: Optional[dict] = None) -> list[str]:
+        """
+        Uploads a file to the knowledge base.
+
+        This method uploads a file specified by `file_path` to the knowledge base, optionally
+        associating it with metadata.
+
+        Parameters
+        ----------
+        file_path : Union[str, Path]
+            The path to the file to be uploaded. Can be a string or a Path object.
+        metadata : Optional[dict], optional
+            A dictionary containing metadata for the file. The keys "file_name", "knowledge_base",
+            "user_id", "file_path", and "file_id" are reserved and cannot be used.
+            If provided, it should not contain any of these keys. The default is None, which means
+            no metadata will be associated with the file.
+
+        Returns
+        -------
+        list[str]
+            A list of pipeline run IDs generated after the file is uploaded.
+
+        Raises
+        ------
+        ValueError
+            If any reserved keys are present in the metadata.
+            If the file type is not supported (not in SUPPORTED_FILE_TYPES).
+
+        """
         if metadata is not None:
             if any(
-                key in metadata.keys()
-                for key in ["file_name", "knowledge_base", "user_id", "namespace", "file_path", "file_id"]
+                key in metadata.keys() for key in ["file_name", "knowledge_base", "user_id", "file_path", "file_id"]
             ):
                 msg = '"file_name", "knowledge_base", "user_id", "namespace", "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
                 raise ValueError(msg)
@@ -97,6 +154,28 @@ class KnowledgeBase:
         return run_ids
 
     def upload_text(self, text: str, file_name: str, metadata: Optional[dict] = None) -> None:
+        """
+        Uploads a text string as a file to a knowledge base with optional metadata.
+
+        Parameters
+        ----------
+        text : str
+            The text content to be uploaded.
+        file_name : str
+            The name of the file to be created. If the provided file_name does not end with '.txt',
+            it is automatically modified to end with this extension.
+        metadata : dict, optional
+            A dictionary containing metadata for the upload. There are reserved keys that
+            cannot be used: 'file_name', 'knowledge_base', 'user_id',
+            'file_path', and 'file_id'. If any of these keys are present, a ValueError is raised.
+
+        Raises
+        ------
+        ValueError
+            If any reserved key is present in the metadata dictionary.
+
+
+        """
         if metadata is not None:
             if any(
                 key in metadata.keys()
@@ -125,6 +204,27 @@ class KnowledgeBase:
     def upload_from_directory(
         self, directory: Union[str, Path], metadata: Optional[Union[dict, List[dict]]] = None
     ) -> None:
+        """
+        Uploads files from a given directory to a knowledgebase.
+
+        This method uploads all files within a specified directory that match the supported file types.
+
+        Parameters
+        ----------
+        directory : Union[str, Path]
+            The path to the directory containing the files to be uploaded. Can be a string or a Path object.
+        metadata : Optional[Union[dict, List[dict]]], optional
+            Metadata associated with the files to be uploaded. This can be a single dictionary applied to all files,
+            or a list of dictionaries with one dictionary for each file. If a list is provided, its length must match
+            the number of files. If omitted or `None`, no metadata will be applied.
+
+        Raises
+        ------
+        ValueError
+            If the provided directory is not an actual directory or if the length of the metadata list does not match
+            the number of files to be uploaded.
+
+        """
         directory = Path(directory).expanduser().resolve()
         if not directory.is_dir():
             msg = "You must provide a direcotry"
@@ -135,9 +235,15 @@ class KnowledgeBase:
 
         if isinstance(metadata, list):
             if len(metadata) != len(files_to_upload):
-                raise ValueError("Metadata list len does not match the number of files in directory")
-        else:
+                msg = "Metadata list len does not match the number of files in directory"
+                raise ValueError(msg)
+        elif metadata is None:
+            metadata = {}
+
+        elif isinstance(metadata, dict):
             metadata = [metadata] * len(files_to_upload)
+        else:
+            raise ValueError("Invalid metadata object")
 
         for file_path, metadata in zip(files_to_upload, metadata):
             self.upload_file(file_path, metadata)
