@@ -99,15 +99,17 @@ steps:
       knowledgebase_names: ["my_kb"]
     depends_on: []
 
+  - step: Preprocessor
+    name: preprocessor
+    step_args: {}
+    inputs: [input]
+
   - step: Chunker
     name: simple_chunker
     step_args:
       chunk_size_words: 320
       chunk_overlap: 30
-      split_by: word
-      split_respect_sentence_boundary: true
-      hard_split_max_chars: 2400
-    depends_on: [input]
+    inputs: [preprocessor]
 
   - step: SentenceTransformerEmbedder
     name: sentence-transformers
@@ -224,4 +226,3 @@ chunks = query_pipeline.run(override_args)
 ## License
 
 `onecontext` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
-

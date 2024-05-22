@@ -6,14 +6,17 @@ steps:
       knowledgebase_names: ["my_kb"]
     depends_on: []
 
+  - step: Preprocessor
+    name: preprocessor
+    step_args: {}
+    inputs: [input]
+
   - step: Chunker
     name: simple_chunker
     step_args:
-      chunk_size_words: 150
+      chunk_size_words: 320
       chunk_overlap: 30
-      split_by: word
-      split_respect_sentence_boundary: true
-    depends_on: [input]
+    inputs: [preprocessor]
 
   - step: SentenceTransformerEmbedder
     name: sentence-transformers
