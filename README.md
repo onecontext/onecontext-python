@@ -11,6 +11,9 @@
 
 -----
 
+## Full docs page
+Check out our [docs](https://docs.onecontext.ai) for a in-depth treatment of how our platform works!
+
 ## LLM Context as a Service
 
 OneContext makes it really easy and fast to augment your LLM application with your own data
