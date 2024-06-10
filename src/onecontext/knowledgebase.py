@@ -194,7 +194,7 @@ class KnowledgeBase:
             file_name += ".txt"
 
         files = {"files": (file_name, file)}
-        data = {"pipeline_name": self.name}
+        data = {"knowledgebase_name": self.name}
         if metadata_json:
             data.update({"metadata_json": metadata_json})
 
