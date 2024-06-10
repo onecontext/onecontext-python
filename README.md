@@ -11,6 +11,9 @@
 
 -----
 
+## Full docs page
+Check out our [docs](https://docs.onecontext.ai) for a in-depth treatment of how our platform works!
+
 ## LLM Context as a Service
 
 OneContext makes it really easy and fast to augment your LLM application with your own data
@@ -97,7 +100,7 @@ steps:
     step_args:
       # specify the source knowledgebases to watch
       knowledgebase_names: ["my_kb"]
-    depends_on: []
+    inputs: []
 
   - step: Preprocessor
     name: preprocessor
@@ -115,13 +118,13 @@ steps:
     name: sentence-transformers
     step_args:
       model_name: BAAI/bge-base-en-v1.5
-    depends_on: [ simple_chunker ]
+    inputs: [ simple_chunker ]
 
   - step: ChunkWriter
     name: save
     step_args:
       vector_index_name: my_vector_index
-    depends_on: [sentence-transformers]
+    inputs: [sentence-transformers]
 ```
 
 Then deploy like so:
@@ -152,7 +155,12 @@ steps:
       vector_index_name: my_vector_index
       top_k: 100
       metadata_filters: { }
+<<<<<<< HEAD
     depends_on: [ query_embedder ]
+=======
+    inputs: [ ]
+
+>>>>>>> main
 
   - step: Reranker
     name: reranker
@@ -161,7 +169,7 @@ steps:
       model_name: BAAI/bge-reranker-base
       top_k: 5
       metadata_filters: { }
-    depends_on: [ retriever ]
+    inputs: [ retriever ]
 
 ```
 Here we create a simple two-step query pipeline.
