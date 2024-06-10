@@ -1,14 +1,19 @@
 steps:
+  - step: SentenceTransformerEmbedder
+    name: query_embedder
+    step_args:
+      model_name: BAAI/bge-base-en-v1.5
+      include_metadata: [ title, file_name ]
+      query: "placeholder"
+    inputs: [ ]
+
   - step: Retriever
     name: retriever
     step_args:
-      query: "placeholder"
-      model_name: BAAI/bge-base-en-v1.5
       vector_index_name: my_vector_index
       top_k: 100
       metadata_filters: { }
-    depends_on: [ ]
-
+    inputs: [ query_embedder ]
 
   - step: Reranker
     name: reranker
@@ -17,5 +22,5 @@ steps:
       model_name: BAAI/bge-reranker-base
       top_k: 5
       metadata_filters: { }
-    depends_on: [ retriever ]
+    inputs: [ retriever ]
 
