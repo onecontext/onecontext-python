@@ -110,7 +110,9 @@ class OneContext:
         """
         return KnowledgeBase(name, self._client, self._urls)
 
-    def deploy_pipeline(self, name: str, pipeline_yaml_path: Union[Path, str]) -> Pipeline:
+    def deploy_pipeline(
+        self, name: str, pipeline_yaml_path: Optional[Union[Path, str]] = None, pipeline_yaml: Optional[str] = None
+    ) -> Pipeline:
         """
         Deploys a pipeline based on the provided YAML configuration.
 
@@ -118,8 +120,14 @@ class OneContext:
         ----------
         name : str
             The name of the pipeline to be deployed.
-        pipeline_yaml_path : Union[Path, str]
+
+        pipeline_yaml_path : Optional[Union[Path, str]]
             The file path to the pipeline YAML configuration. It can be a string or a Path object.
+            Provide pipeline_yaml_path or pipeline_yaml, not both.
+
+        pipeline_yaml : Optional[str]
+            The pipeline YAML configuration.
+            Provide pipeline_yaml_path or pipeline_yaml, not both.
 
         Returns
         -------
@@ -132,13 +140,24 @@ class OneContext:
             If the provided file path does not have a .yaml or .yml extension.
 
         """
-        path = Path(pipeline_yaml_path)
+        if pipeline_yaml_path is not None and pipeline_yaml is not None:
+            raise ValueError("Provide pipeline_yaml_path or pipeline_yaml, not both.")
 
-        if path.suffix not in {".yaml", ".yml"}:
-            msg = "Expected a yaml file"
-            raise ValueError(msg)
+        if pipeline_yaml_path is not None:
+            path = Path(pipeline_yaml_path)
 
-        yaml_config = path.read_text()
+            if path.suffix not in {".yaml", ".yml"}:
+                msg = "Expected a yaml file"
+                raise ValueError(msg)
+
+            yaml_config = path.read_text()
+
+        elif pipeline_yaml is not None:
+            yaml_config = pipeline_yaml
+
+        else:
+            raise ValueError("Provide pipeline_yaml_path or pipeline_yaml")
+
         data = {"name": name, "yaml_config": yaml_config}
         create_response = self._client.post(self._urls.pipeline(), json=data)
 
