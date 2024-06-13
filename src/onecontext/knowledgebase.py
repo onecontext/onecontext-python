@@ -93,7 +93,10 @@ class KnowledgeBase:
         """
         self._client.delete(
             self._urls.files(),
-            params={"file_names": file_names},
+            json={
+                "file_names": file_names,
+                "knowledgebase_name": self.name,
+            },
         )
 
     def upload_file(self, file_path: Union[str, Path], metadata: Optional[dict] = None) -> list[str]:
