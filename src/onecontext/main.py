@@ -291,6 +291,21 @@ class OneContext:
         create_response: Dict[str, Any] = self._client.post(self._urls.index(), json=data)
         return VectorIndex(**create_response, _client=self._client, _urls=self._urls)
 
+    def delete_index(self, name: str) -> None:
+        """
+        Delete a vecctor index base by its name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the vector index to delete.
+
+        Returns
+        -------
+        None
+        """
+        self._client.delete(self._urls.index(name))
+
     def list_indexes(self):
         """
         Retrieve a list of VectorIndex objects from teh API.
