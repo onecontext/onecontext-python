@@ -8,7 +8,7 @@ from onecontext.pipeline import Pipeline
 
 
 class OneContext:
-    def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.onecontext.ai/v1/"):
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
         """
         Initialize the OneContext client with an API key and base URL.
 
@@ -20,6 +20,7 @@ class OneContext:
             will be used. Defaults to None.
         base_url : str, optional
             The base URL for the OneContext API. Defaults to "https://api.onecontext.ai/v1/".
+            Can be overridden with the environment variable 'ONECONTEXT_API_KEY'
 
         Raises
         ------
@@ -36,6 +37,12 @@ class OneContext:
                 "set the 'ONECONTEXT_API_KEY' environment variable."
             )
             raise ConfigurationError(msg)
+
+        if base_url is None:
+            base_url = os.environ.get("ONECONTEXT_BASE_URL")
+
+        base_url = base_url or "https://api.onecontext.ai/v1/"
+
         self._client = ApiClient(api_key)
         self._urls = URLS(base_url)
 
