@@ -38,13 +38,12 @@ top_k = 5
 # overide the step_args for the two steps of the query pipeline by
 # passing dict in the form {step_name: step_args_dict}
 override_args = {
+    "query_embedder": {"query": query},
     "retriever": {
         "top_k": retriever_top_k,
-        "query": query,
     },
     "reranker": {"top_k": top_k, "query": query},
 }
-
 query_pipeline = oc.Pipeline("basic_query")
 
 chunks = query_pipeline.run(override_args)

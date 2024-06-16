@@ -27,7 +27,7 @@ We manage the full document processing and retrieval pipeline so that you don't 
 for your LLM application
 
 We keep up with the latest research to provide an accurate and fast retrieval pipeline
-based on model evalution and best practice heuristics.
+based on model evaluation and best practice heuristics.
 
 ### Multi stage query pipeline out of the box:
 - Fast base-model retrieves a large pool of documents
@@ -53,7 +53,7 @@ pip install onecontext
 > If you prefer to jump right in the full example code is in [`quickstart.py`](examples/quickstart.py)
 
 
-``` python
+```python
 
 from onecontext import OneContext
 
@@ -78,7 +78,7 @@ somewhere to store our vectors. We create a vector index and specify the
 embedding model that the vector index should expect:
 
 
-``` py
+```python
 oc.create_index("my_vector_index", model="BAAI/bge-base-en-v1.5")
 ```
 
@@ -141,16 +141,21 @@ Create a [`query.yaml`](examples/query.yaml) with the following content:
 
 ```yaml
 steps:
+  - step: SentenceTransformerEmbedder
+    name: query_embedder
+    step_args:
+      model_name: BAAI/bge-base-en-v1.5
+      include_metadata: [ title, file_name ]
+      query: "placeholder"
+    inputs: [ ]
+
   - step: Retriever
     name: retriever
     step_args:
-      query: "placeholder"
-      model_name: BAAI/bge-base-en-v1.5
       vector_index_name: my_vector_index
       top_k: 100
       metadata_filters: { }
-    inputs: [ ]
-
+    inputs: [ query_embedder ]
 
   - step: Reranker
     name: reranker
@@ -162,10 +167,10 @@ steps:
     inputs: [ retriever ]
 
 ```
-
 Here we create a simple two-step query pipeline.
 
-- The `Retriever` step embeds the query and performs a similarity search against
+- The `SentenceTransformerEmbedder` step embeds the query
+- The `Retriever` performs a similarity search against
     the index we defined earlier. This step has a high recall and is great to
     retrieve many candidate vectors.
 - The `Reranker` step uses cross-encoder model to further narrow down the results
@@ -215,9 +220,9 @@ retriever_top_k = 50
 top_k = 5
 
 override_args = {
+    "query_embedder": {"query": query},
     "retriever": {
         "top_k": retriever_top_k,
-        "query": query,
     },
     "reranker": {"top_k": top_k, "query": query},
 }
