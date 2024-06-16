@@ -53,7 +53,7 @@ pip install onecontext
 > If you prefer to jump right in the full example code is in [`quickstart.py`](examples/quickstart.py)
 
 
-``` python
+```python
 
 from onecontext import OneContext
 
@@ -78,7 +78,7 @@ somewhere to store our vectors. We create a vector index and specify the
 embedding model that the vector index should expect:
 
 
-``` py
+```python
 oc.create_index("my_vector_index", model="BAAI/bge-base-en-v1.5")
 ```
 
@@ -155,12 +155,7 @@ steps:
       vector_index_name: my_vector_index
       top_k: 100
       metadata_filters: { }
-<<<<<<< HEAD
     depends_on: [ query_embedder ]
-=======
-    inputs: [ ]
-
->>>>>>> main
 
   - step: Reranker
     name: reranker
