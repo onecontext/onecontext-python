@@ -28,7 +28,8 @@ knowledgebase.upload_file("babbage.pdf")
 
 # this kicks of a run for every connected pipeline:
 # list runs to see the current state of each run
-print(oc.list_runs())
+
+print(oc.list_runs(status="RUNNING"))
 
 # once the ingestion_pipeline run is complete we can query the index for relevant chunks
 query = "What are consequences of inventing a computer?"
