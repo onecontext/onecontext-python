@@ -93,7 +93,10 @@ class KnowledgeBase:
         """
         self._client.delete(
             self._urls.files(),
-            params={"file_names": file_names},
+            json={
+                "file_names": file_names,
+                "knowledgebase_name": self.name,
+            },
         )
 
     def upload_file(self, file_path: Union[str, Path], metadata: Optional[dict] = None) -> list[str]:
@@ -194,7 +197,7 @@ class KnowledgeBase:
             file_name += ".txt"
 
         files = {"files": (file_name, file)}
-        data = {"pipeline_name": self.name}
+        data = {"knowledgebase_name": self.name}
         if metadata_json:
             data.update({"metadata_json": metadata_json})
 
