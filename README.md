@@ -155,7 +155,7 @@ steps:
       vector_index_name: my_vector_index
       top_k: 100
       metadata_filters: { }
-    depends_on: [ query_embedder ]
+    inputs: [ query_embedder ]
 
   - step: Reranker
     name: reranker
