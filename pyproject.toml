@@ -51,6 +51,7 @@ dependencies = [
     "IPython",
     "pudb",
     "jupyter",
+    "yamlmagic",
 ]
 
 [tool.hatch.envs.default.scripts]
