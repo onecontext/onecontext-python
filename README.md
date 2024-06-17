@@ -155,7 +155,11 @@ steps:
       vector_index_name: my_vector_index
       top_k: 100
       metadata_filters: { }
+<<<<<<< Updated upstream
     inputs: [ query_embedder ]
+=======
+    inputs: ["query_embedder"]
+>>>>>>> Stashed changes
 
   - step: Reranker
     name: reranker
