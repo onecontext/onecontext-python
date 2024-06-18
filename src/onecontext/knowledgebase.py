@@ -1,12 +1,11 @@
-from typing import Any, Dict, List, Optional, Union
-from dataclasses import dataclass, field
-import os
 import io
-from pathlib import Path
 import json
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 from onecontext.client import URLS, ApiClient
-
 
 SUPPORTED_FILE_TYPES = (".pdf", ".docx", ".txt", ".md")
 
@@ -229,6 +228,7 @@ class KnowledgeBase:
 
         """
         directory = Path(directory).expanduser().resolve()
+
         if not directory.is_dir():
             msg = "You must provide a direcotry"
             raise ValueError(msg)
@@ -236,17 +236,17 @@ class KnowledgeBase:
         all_files = [os.path.join(directory, file) for file in os.listdir(directory)]
         files_to_upload = [file for file in all_files if file.endswith(SUPPORTED_FILE_TYPES)]
 
+        metadata = metadata or {}
+
         if isinstance(metadata, list):
             if len(metadata) != len(files_to_upload):
                 msg = "Metadata list len does not match the number of files in directory"
                 raise ValueError(msg)
-        elif metadata is None:
-            metadata = {}
 
         elif isinstance(metadata, dict):
             metadata = [metadata] * len(files_to_upload)
         else:
             raise ValueError("Invalid metadata object")
 
-        for file_path, metadata in zip(files_to_upload, metadata):
-            self.upload_file(file_path, metadata)
+        for file_path, file_metadata in zip(files_to_upload, metadata):
+            self.upload_file(file_path, file_metadata)
