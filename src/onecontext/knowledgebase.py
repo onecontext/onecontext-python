@@ -1,12 +1,11 @@
-from typing import Any, Dict, List, Optional, Union
-from dataclasses import dataclass, field
-import os
 import io
-from pathlib import Path
 import json
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 from onecontext.client import URLS, ApiClient
-
 
 SUPPORTED_FILE_TYPES = (".pdf", ".docx", ".txt", ".md")
 
@@ -34,7 +33,7 @@ class KnowledgeBase:
     id: Optional[str] = None
 
     def list_files(
-        self, skip=0, limit=20, sort="date_created", metadata_filters=None, date_created_gte=None, date_created_lte=None
+        self, skip=0, limit=500, sort="date_created", metadata_filters=None, date_created_gte=None, date_created_lte=None
     ) -> List[Dict[str, Any]]:
         """
         Lists files in the knowledge base with various filtering, sorting, and pagination options.
@@ -229,6 +228,7 @@ class KnowledgeBase:
 
         """
         directory = Path(directory).expanduser().resolve()
+
         if not directory.is_dir():
             msg = "You must provide a direcotry"
             raise ValueError(msg)
@@ -236,17 +236,17 @@ class KnowledgeBase:
         all_files = [os.path.join(directory, file) for file in os.listdir(directory)]
         files_to_upload = [file for file in all_files if file.endswith(SUPPORTED_FILE_TYPES)]
 
+        metadata = metadata or {}
+
         if isinstance(metadata, list):
             if len(metadata) != len(files_to_upload):
                 msg = "Metadata list len does not match the number of files in directory"
                 raise ValueError(msg)
-        elif metadata is None:
-            metadata = {}
 
         elif isinstance(metadata, dict):
             metadata = [metadata] * len(files_to_upload)
         else:
             raise ValueError("Invalid metadata object")
 
-        for file_path, metadata in zip(files_to_upload, metadata):
-            self.upload_file(file_path, metadata)
+        for file_path, file_metadata in zip(files_to_upload, metadata):
+            self.upload_file(file_path, file_metadata)
