@@ -33,7 +33,7 @@ class KnowledgeBase:
     id: Optional[str] = None
 
     def list_files(
-        self, skip=0, limit=20, sort="date_created", metadata_filters=None, date_created_gte=None, date_created_lte=None
+        self, skip=0, limit=500, sort="date_created", metadata_filters=None, date_created_gte=None, date_created_lte=None
     ) -> List[Dict[str, Any]]:
         """
         Lists files in the knowledge base with various filtering, sorting, and pagination options.
