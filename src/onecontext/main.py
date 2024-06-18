@@ -1,8 +1,9 @@
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
-import os
-from onecontext.index import VectorIndex
+
 from onecontext.client import URLS, ApiClient, ConfigurationError
+from onecontext.index import VectorIndex
 from onecontext.knowledgebase import KnowledgeBase
 from onecontext.pipeline import Pipeline
 
@@ -238,6 +239,13 @@ class OneContext:
             A list of dictionaries containing the run information.
 
         """
+
+        valid_status = ["RUNNING", "SUCCESSFUL", "FAILED"]
+
+        if status not in valid_status:
+            err_msg = f"status must be one of {valid_status}"
+            raise ValueError(err_msg)
+
         runs: List[Dict[str, Any]] = self._client.get(
             self._urls.run_results(),
             params={
