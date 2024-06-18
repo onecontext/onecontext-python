@@ -154,7 +154,7 @@ steps:
     step_args:
       vector_index_name: my_vector_index
       top_k: 100
-      metadata_filters: { }
+      metadata_json: { }
     inputs: [ query_embedder ]
 
   - step: Reranker
@@ -163,7 +163,6 @@ steps:
       query: "placeholder"
       model_name: BAAI/bge-reranker-base
       top_k: 5
-      metadata_filters: { }
     inputs: [ retriever ]
 
 ```
