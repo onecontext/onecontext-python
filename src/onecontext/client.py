@@ -19,9 +19,6 @@ class URLS:
     def _join_base(self, url: str) -> str:
         return urljoin(self.base_url, url)
 
-    def chunks(self):
-        return self._join_base("get_stuff")
-
     def submit_run(self) -> str:
         return self._join_base("submit-run")
 
@@ -43,11 +40,14 @@ class URLS:
     def files(self) -> str:
         return self._join_base("files")
 
+    def chunks(self) -> str:
+        return self._join_base("chunks")
+
     def pipeline(self, pipeline_name: Optional[str] = None) -> str:
         return self._join_base(f"pipeline/{pipeline_name}" if pipeline_name else "pipeline")
 
     def run_results(self):
-        return self._join_base(f"run_results/")
+        return self._join_base("run_results/")
 
 
 class ApiClient:
