@@ -31,10 +31,17 @@ class VectorIndex:
     _urls: URLS = field(repr=False)
 
     def list_chunks(
-        self, file_names=None, file_ids=None,
-        chunk_ids=None, skip=0, limit=200, sort="date_created", metadata_filters=None,
-        date_created_gte=None, date_created_lte=None
-    ) -> List[Dict[str, Any]]:
+        self,
+        file_names=None,
+        file_ids=None,
+        chunk_ids=None,
+        skip=0,
+        limit=200,
+        sort="date_created",
+        metadata_filters=None,
+        date_created_gte=None,
+        date_created_lte=None,
+    ) -> list[Chunk]:
         """
         Lists chunks in the knowledge base with various filtering, sorting, and pagination options.
 
@@ -87,7 +94,13 @@ class VectorIndex:
         return [Chunk(**document) for document in results]
 
     def list_files(
-        self, skip=0, limit=500, sort="date_created", metadata_filters=None, date_created_gte=None, date_created_lte=None
+        self,
+        skip=0,
+        limit=500,
+        sort="date_created",
+        metadata_filters=None,
+        date_created_gte=None,
+        date_created_lte=None,
     ) -> List[Dict[str, Any]]:
         """
         Lists files associated to the chunks in the vecotr index.
@@ -129,4 +142,3 @@ class VectorIndex:
             },
         )
         return files
-
