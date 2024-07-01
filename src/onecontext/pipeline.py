@@ -25,6 +25,7 @@ class Chunk:
     content: str
     metadata_json: Optional[dict] = None
     file_name: str | None = None
+    date_created: str | None = None
 
 
 @dataclass
