@@ -71,7 +71,7 @@ class KnowledgeBase:
         files: List[Dict[str, Any]] = self._client.post(
             self._urls.files(),
             json={
-                "knowledgebase_name": self.name,
+                "knowledgebase_names": [self.name],
                 "skip": skip,
                 "limit": limit,
                 "date_created_gte": date_created_gte,
@@ -160,6 +160,10 @@ class KnowledgeBase:
 
             run_ids = self._client.post(self._urls.upload(), data=data, files=files)
         return run_ids
+
+    def upload_yt_urls(self, upload_urls: list[str]):
+        data = {"knowledgebase_name": self.name, "urls": upload_urls}
+        self._client.post(self._urls.upload_urls(), json=data)
 
     def upload_text(self, text: str, file_name: str, metadata: Optional[dict] = None) -> None:
         """

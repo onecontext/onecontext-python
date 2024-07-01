@@ -240,7 +240,7 @@ class OneContext:
 
         """
 
-        valid_status = ["RUNNING", "SUCCESSFUL", "FAILED"]
+        valid_status = ["RUNNING", "SUCCESSFUL", "FAILED", None]
 
         if status not in valid_status:
             err_msg = f"status must be one of {valid_status}"
