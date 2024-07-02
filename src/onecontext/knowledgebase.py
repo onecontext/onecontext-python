@@ -104,6 +104,26 @@ class KnowledgeBase:
             },
         )
 
+    def delete_duplicate_files(self) -> None:
+        """
+
+        Deletes duplicate files by file_name in the knowledge_base
+
+        The most recent file for each duplicate file_name is retained
+
+
+        Returns
+        -------
+        None
+
+        """
+        self._client.delete(
+            self._urls.delete_duplicate_files(),
+            json={
+                "knowledgebase_name": self.name,
+            },
+        )
+
     def upload_file(self, file_path: Union[str, Path], metadata: Optional[dict] = None) -> list[str]:
         """
         Uploads a file to the knowledge base.
