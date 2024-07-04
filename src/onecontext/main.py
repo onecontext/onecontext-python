@@ -299,7 +299,7 @@ class OneContext:
         Examples
         --------
         >>> oc = OneContextContext(...)
-        >>> index = oc.create_index('my_index', 'BAAI/bge-base-en-v1.5')
+        >>> index = oc.create_vector_index('my_index', 'BAAI/bge-base-en-v1.5')
 
         """
         data = {"name": name, "model_name": model}
