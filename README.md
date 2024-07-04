@@ -79,7 +79,7 @@ embedding model that the vector index should expect:
 
 
 ```python
-oc.create_index("my_vector_index", model="BAAI/bge-base-en-v1.5")
+oc.create_vector_index("my_vector_index", model="BAAI/bge-base-en-v1.5")
 ```
 
 By specifying the model we create a vector index of appropriate dimensions and
