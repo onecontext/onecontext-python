@@ -52,6 +52,9 @@ class URLS:
     def run_results(self):
         return self._join_base("run_results/")
 
+    def submit_openai_key(self):
+        return self._join_base("submit_openai_key")
+
 
 class ApiClient:
     def __init__(self, api_key: str) -> None:

@@ -352,3 +352,7 @@ class OneContext:
             An instance of VectorIndex with the given configuration.
         """
         return VectorIndex(name, model_name=model_name, _client=self._client, _urls=self._urls)
+
+    def set_openai_key(self, openai_api_key: str) -> None:
+        data = openai_api_key
+        self._client.post(self._urls.submit_openai_key(), json=data)
