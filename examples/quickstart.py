@@ -14,7 +14,7 @@ knowledgebase = oc.create_knowledgebase(name="my_kb")
 
 # A vector index is a collection of chunks with embeddings
 # specify the model at creation to configure the vector index
-oc.create_index("my_vector_index", model="BAAI/bge-base-en-v1.5")
+oc.create_vector_index("my_vector_index", model="BAAI/bge-base-en-v1.5")
 
 # deploy an ingesiton pipeline that watches the knowledge base we just ceated
 oc.deploy_pipeline("my_ingestion_pipeline", pipeline_yaml_path="./ingestion.yaml")

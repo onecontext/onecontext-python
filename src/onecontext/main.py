@@ -81,7 +81,7 @@ class OneContext:
         """
         self._client.delete(self._urls.knowledge_base(name))
 
-    def list_knowledge_bases(self) -> List[KnowledgeBase]:
+    def list_knowledgebases(self) -> List[KnowledgeBase]:
         """
         List the available Knowledge Bases.
 
@@ -279,7 +279,7 @@ class OneContext:
         """
         return Pipeline(name=name, _client=self._client, _urls=self._urls)
 
-    def create_index(self, name: str, model: str) -> VectorIndex:
+    def create_vector_index(self, name: str, model: str) -> VectorIndex:
         """
         Creates a new vector index with the specified name and model.
 
@@ -306,7 +306,7 @@ class OneContext:
         create_response: Dict[str, Any] = self._client.post(self._urls.index(), json=data)
         return VectorIndex(**create_response, _client=self._client, _urls=self._urls)
 
-    def delete_index(self, name: str) -> None:
+    def delete_vector_index(self, name: str) -> None:
         """
         Delete a vecctor index base by its name.
 
@@ -321,7 +321,7 @@ class OneContext:
         """
         self._client.delete(self._urls.index(name))
 
-    def list_indexes(self):
+    def list_vector_indexes(self):
         """
         Retrieve a list of VectorIndex objects from teh API.
 
