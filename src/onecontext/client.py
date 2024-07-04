@@ -40,6 +40,9 @@ class URLS:
     def files(self) -> str:
         return self._join_base("files")
 
+    def delete_duplicate_files(self) -> str:
+        return self._join_base("delete_duplicate_files")
+
     def chunks(self) -> str:
         return self._join_base("chunks")
 
