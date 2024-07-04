@@ -354,5 +354,19 @@ class OneContext:
         return VectorIndex(name, model_name=model_name, _client=self._client, _urls=self._urls)
 
     def set_openai_key(self, openai_api_key: str) -> None:
+        """
+        Submit your OpenAI API key to OneContext
+
+        OneConext encrypts your key with a symetric Google KMS key
+        and only the ciphertext is stored on our servers.
+
+        You can learn more about symetric Google KMS encryption here:
+        https://cloud.google.com/kms/docs/encrypt-decrypt
+
+        Parameters
+        ----------
+        openai_api_key : str
+            The OpenAI API key to be used by the client.
+        """
         data = openai_api_key
         self._client.post(self._urls.submit_openai_key(), json=data)
