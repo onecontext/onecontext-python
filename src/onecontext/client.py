@@ -55,6 +55,9 @@ class URLS:
     def submit_openai_key(self):
         return self._join_base("submit_openai_key")
 
+    def evaluation(self, eval_run_id: Optional[str] = None):
+        return self._join_base(f"evaluation/{eval_run_id}" if eval_run_id else "evaluation")
+
 
 class ApiClient:
     def __init__(self, api_key: str) -> None:

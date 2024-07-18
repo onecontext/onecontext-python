@@ -118,6 +118,63 @@ class OneContext:
         """
         return KnowledgeBase(name, self._client, self._urls)
 
+    def evaluate(
+        self,
+        dataset: list[dict],
+        pipeline_yaml: str,
+        target_metadata_key: str,
+        override_args_map: Dict[str, list[str]],
+        lables_column: str = "labels",
+        eval_run_metadata: Optional[Dict] = None,
+    ):
+        """
+        Evaluates a dataset using the specified pipeline and additional arguments.
+
+        Parameters
+        ----------
+        dataset : list[dict]
+            A list of dictionaries, each representing a record in the dataset to be evaluated.
+        pipeline_yaml : str
+            The pipeline yaml conifg for the pipeline to be evaluated.
+        target_metadata_key : str
+            The key in the chunk metadata to be used as the target for the evaluation.
+            The predicted labels will be extracted from each retreived chunk
+            using this metadata key.
+        override_args_map : Dict[str, list[str]]
+            A mapping from columns / keys present in the dataset to pipeline step arguments to be overridden for each record.
+            eg. `{"Question" : ["query_embedder.query", "reranker.query"]} will fill the query arguments for the
+            query embedder and reranker steps with the value from the "Question" column for each record in the dataset.
+        labels_column : str, optional
+            The name of the column in the dataset that contains the target labels
+            for relevant chunks, by default "labels".
+            These labels will be used to compute metrics against the target_metdata key.
+        eval_run_metadata : Optional[Dict], optional
+            Additional metadata to be included with the evaluation run, by default None.
+
+        Returns
+        -------
+        The eval run id
+
+        """
+        eval_run_metadata = eval_run_metadata or {}
+
+        data = {
+            "dataset": dataset,
+            "pipeline_yaml": pipeline_yaml,
+            "override_args_map": override_args_map,
+            "labels_column": lables_column,
+            "target_metadata_key": target_metadata_key,
+            "eval_run_metadata": eval_run_metadata,
+        }
+
+        return self._client.post(self._urls.evaluation(), json=data)
+
+    def get_evaluation_results(
+        self,
+        eval_run_id: str,
+    ):
+        return self._client.get(self._urls.evaluation(eval_run_id))
+
     def deploy_pipeline(
         self, name: str, pipeline_yaml_path: Optional[Union[Path, str]] = None, pipeline_yaml: Optional[str] = None
     ) -> Pipeline:
