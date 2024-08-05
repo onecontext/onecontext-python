@@ -58,6 +58,27 @@ class URLS:
     def evaluation(self, eval_run_id: Optional[str] = None):
         return self._join_base(f"evaluation/{eval_run_id}" if eval_run_id else "evaluation")
 
+    def context_run_results(self) -> str:
+        return self._join_base("context/run_results")
+
+    def context_delete_duplicate_files(self) -> str:
+        return self._join_base("context/delete_duplicate_files")
+
+    def context_files(self) -> str:
+        return self._join_base("context/files")
+
+    def context_chunks(self) -> str:
+        return self._join_base("context/chunks")
+
+    def context(self) -> str:
+        return self._join_base("context")
+
+    def context_upload(self) -> str:
+        return self._join_base("context/upload")
+
+    def context_query(self) -> str:
+        return self._join_base("context/query")
+
 
 class ApiClient:
     def __init__(self, api_key: str) -> None:

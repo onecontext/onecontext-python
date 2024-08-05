@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from onecontext.client import URLS, ApiClient, ConfigurationError
+from onecontext.context import Context
 from onecontext.index import VectorIndex
 from onecontext.knowledgebase import KnowledgeBase
 from onecontext.pipeline import Pipeline
@@ -117,6 +118,47 @@ class OneContext:
 
         """
         return KnowledgeBase(name, self._client, self._urls)
+
+    def create_context(self, name: str) -> Context:
+        """
+        Create a new context with the given name.
+
+        Parameters
+        ----------
+        name : str
+            The name for the new knowledge base.
+
+        Returns
+        -------
+        Context
+            An instance of the Context class initialized with the given name.
+
+        """
+        data = {"name": name}
+        self._client.post(self._urls.context(), json=data)
+        return Context(name, self._client, self._urls)
+
+    def delete_context(self, name: str) -> None:
+        data = {"name": name}
+        self._client.delete(self._urls.context(), json=data)
+
+    def list_contexts(self) -> List[Context]:
+        """
+        List the available Contexts
+
+        This method fetches a list of contexts from the API.
+
+        Returns
+        -------
+        List[Context]
+            A list of Context objects.
+
+        """
+        context_dicts: Dict = self._client.get(self._urls.context())
+        return [Context(**ctxt, _client=self._client, _urls=self._urls) for ctxt in context_dicts]
+
+    def Context(self, name: str) -> Context:
+        return Context(name, self._client, self._urls)
 
     def evaluate(
         self,
