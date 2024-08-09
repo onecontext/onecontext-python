@@ -100,7 +100,7 @@ class KnowledgeBase:
             self._urls.files(),
             json={
                 "file_names": file_names,
-                "knowledgebase_name": self.name,
+                "knowledgebase_names": [self.name],
             },
         )
 
