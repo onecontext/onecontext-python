@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from onecontext.client import URLS, ApiClient
 
-SUPPORTED_FILE_TYPES = (".pdf", ".docx", ".txt", ".md")
+SUPPORTED_FILE_TYPES = (".pdf", ".docx", ".txt", ".md", ".jpg", ".jpeg", ".png")
 
 
 @dataclass
@@ -124,7 +124,12 @@ class KnowledgeBase:
             },
         )
 
-    def upload_file(self, file_path: Union[str, Path], metadata: Optional[dict] = None) -> list[str]:
+    def upload_file(
+        self,
+        file_path: Union[str, Path],
+        metadata: Optional[Dict] = None,
+        override_args: Dict | None = None,
+    ) -> list[str]:
         """
         Uploads a file to the knowledge base.
 
@@ -176,16 +181,28 @@ class KnowledgeBase:
             files = {"files": (str(file_path), file)}
             data = {"knowledgebase_name": self.name}
             if metadata_json:
-                data.update({"metadata_json": metadata_json})
+                data["metadata_json"] = metadata_json
+            if override_args:
+                data["override_args"] = json.dumps(override_args)
 
             run_ids = self._client.post(self._urls.upload(), data=data, files=files)
         return run_ids
 
-    def upload_yt_urls(self, upload_urls: list[str]):
+    def upload_urls(
+        self,
+        upload_urls: list[str],
+        override_args: dict[str, Any] | None = None,
+        metadata: Optional[Union[Dict, List]] = None,
+    ) -> list[str]:
         data = {"knowledgebase_name": self.name, "urls": upload_urls}
-        self._client.post(self._urls.upload_urls(), json=data)
+        if override_args:
+            data.update({"override_args": override_args})
+        if metadata:
+            data.update({"metadata_json": metadata})
 
-    def upload_text(self, text: str, file_name: str, metadata: Optional[dict] = None) -> None:
+        return self._client.post(self._urls.upload_urls(), json=data)
+
+    def upload_text(self, text: str, file_name: str, metadata: Optional[dict] = None) -> list[str]:
         """
         Uploads a text string as a file to a knowledge base with optional metadata.
 
@@ -230,8 +247,10 @@ class KnowledgeBase:
         if metadata_json:
             data.update({"metadata_json": metadata_json})
 
-        self._client.post(self._urls.upload(), data=data, files=files)
+        run_ids = self._client.post(self._urls.upload(), data=data, files=files)
         file.close()
+
+        return run_ids
 
     def upload_from_directory(
         self, directory: Union[str, Path], metadata: Optional[Union[dict, List[dict]]] = None

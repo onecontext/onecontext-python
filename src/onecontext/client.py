@@ -29,7 +29,7 @@ class URLS:
         return self._join_base("upload")
 
     def upload_urls(self) -> str:
-        return self._join_base("yt_urls")
+        return self._join_base("upload_urls")
 
     def knowledge_base(self, knowledge_base_name: Optional[str] = None) -> str:
         return self._join_base(f"knowledgebase/{knowledge_base_name}" if knowledge_base_name else "knowledgebase")
