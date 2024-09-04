@@ -19,44 +19,26 @@ class URLS:
     def _join_base(self, url: str) -> str:
         return urljoin(self.base_url, url)
 
-    def submit_run(self) -> str:
-        return self._join_base("submit-run")
-
-    def run(self) -> str:
-        return self._join_base("run")
-
-    def upload(self) -> str:
-        return self._join_base("upload")
-
-    def upload_urls(self) -> str:
-        return self._join_base("yt_urls")
-
-    def knowledge_base(self, knowledge_base_name: Optional[str] = None) -> str:
-        return self._join_base(f"knowledgebase/{knowledge_base_name}" if knowledge_base_name else "knowledgebase")
-
-    def index(self, index: Optional[str] = None) -> str:
-        return self._join_base(f"index/{index}" if index else "index")
-
-    def files(self) -> str:
-        return self._join_base("files")
-
-    def delete_duplicate_files(self) -> str:
-        return self._join_base("delete_duplicate_files")
-
-    def chunks(self) -> str:
-        return self._join_base("chunks")
-
-    def pipeline(self, pipeline_name: Optional[str] = None) -> str:
-        return self._join_base(f"pipeline/{pipeline_name}" if pipeline_name else "pipeline")
-
-    def run_results(self):
-        return self._join_base("run_results/")
-
     def submit_openai_key(self):
-        return self._join_base("submit_openai_key")
+        return self._join_base("user/updateUserMeta")
 
-    def evaluation(self, eval_run_id: Optional[str] = None):
-        return self._join_base(f"evaluation/{eval_run_id}" if eval_run_id else "evaluation")
+    def context_files(self) -> str:
+        return self._join_base("context/files/list")
+
+    def context_create(self) -> str:
+        return self._join_base("context/create")
+
+    def context_list(self) -> str:
+        return self._join_base("context/list")
+
+    def context_delete(self, name: str) -> str:
+        return self._join_base(f"context/delete/{name}")
+
+    def context_upload(self) -> str:
+        return self._join_base("jobs/files/add")
+
+    def context_query(self) -> str:
+        return self._join_base("embeddings/get")
 
 
 class ApiClient:
@@ -67,7 +49,7 @@ class ApiClient:
 
     @property
     def _auth_headers(self) -> Dict[str, str]:
-        return {"Authorization": f"Bearer {self.api_key}"}
+        return {"API-KEY": f"{self.api_key}"}
 
     def _handle_response(self, response: requests.Response):
         try:
@@ -76,9 +58,12 @@ class ApiClient:
             response_json = {}
 
         if not response.ok:
-            error_msg = response_json.get("detail", [])
-            if error_msg:
-                msg = f"{response.status_code}: {error_msg}"
+            error_msg = response_json.get("error", [])
+            message = response_json.get("message", "")
+
+            if error_msg or message:
+                user_message = f"{message} : {error_msg}"
+                msg = f"{response.status_code}: {user_message}"
                 raise ApiError(msg)
             else:
                 response.raise_for_status()
