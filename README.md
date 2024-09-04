@@ -32,6 +32,8 @@ oc = OneContext(api_key="<ONECONTEXT_API_KEY>")
 
 You can get an api key [here](https://app.onecontext.ai/settings/account).
 
+Note you mayu need to set the OPENAI_API_KEY on the settings page if using OPENAI embeddigns.
+
 
 ### Create a Context
 
