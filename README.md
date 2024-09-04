@@ -3,13 +3,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/onecontext.svg)](https://pypi.org/project/onecontext)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/onecontext.svg)](https://pypi.org/project/onecontext)
 
------
-**Table of Contents**
-- [LLM Context as a Service](#llm-context-as-a-service)
-- [Quick Start](#quick-start)
-- [License](#license)
 
------
 
 # Official OneContext Python SDK
 
@@ -27,10 +21,6 @@ Install the package with `pip`:
 ```shell
 pip install onecontext
 ```
-
-> **Note:**
-> If you prefer to jump right in the full example code is in [`quickstart.py`](examples/quickstart.py)
-
 
 ```python
 
@@ -83,7 +73,7 @@ In the above code, replace `"path_to_your_directory"` with the actual path to yo
 #### List files available in a context
 
 ```python
-files = oc.list_files()
+files = context.list_files()
 for file in files:
     print(file)
 ```
