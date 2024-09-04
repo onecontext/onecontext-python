@@ -1,95 +1,34 @@
+import dataclasses
 import io
 import json
+import mimetypes
 import os
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from onecontext.client import URLS, ApiClient
-from onecontext.pipeline import Chunk
+from onecontext.models import Chunk, File
 
-SUPPORTED_FILE_TYPES = (".pdf", ".docx", ".txt", ".md")
+SUPPORTED_FILE_TYPES = (".pdf", ".docx")
 
 
 @dataclass
 class Context:
     name: str
-    _client: ApiClient = field(repr=False)
     _urls: URLS = field(repr=False)
+    _client: ApiClient = field(repr=False)
     id: Optional[str] = None
-
-    def list_chunks(
-        self,
-        file_names=None,
-        file_ids=None,
-        chunk_ids=None,
-        skip=0,
-        limit=200,
-        sort="date_created",
-        metadata_filters=None,
-        date_created_gte=None,
-        date_created_lte=None,
-    ) -> list[Chunk]:
-        """
-        Lists chunks in the context base with various filtering, sorting, and pagination options.
-
-        Parameters
-        ----------
-        file_names : list[str], optional
-            A list of names of the files to filter results (default is None).
-        file_ids : list[str], optional
-            A list of IDs of the files to filter results (default is None).
-        chunk_ids : list[str], optional
-            A list of IDs of the chunks to filter results (default is None).
-        skip : int, optional
-            The number of chunks to skip (default is 0).
-        limit : int, optional
-            The maximum number of chunks to return (default is 200).
-        sort : str, optional
-            The field to sort by (default is "date_created").
-            Reverse with "-date_created"
-        metadata_filters : dict, optional
-            A dictionary of metadata fields to filter results (default is None).
-        date_created_gte : datetime, optional
-            The minimum creation date of chunks to list (default is None).
-            ISO 8601 Date Format Example: "2023-01-20T13:01:02Z"
-        date_created_lte : datetime, optional
-            The maximum creation date of chunks to list (default is None).
-            ISO 8601 Date Format Example: "2023-01-20T13:01:02Z"
-
-        Returns
-        -------
-        List[Chunk]
-            A list of Chunk objects that are the result of running the query
-
-        """
-        results = self._client.post(
-            self._urls.context_chunks(),
-            json={
-                "context_name": self.name,
-                "file_names": file_names,
-                "file_ids": file_ids,
-                "chunk_ids": chunk_ids,
-                "skip": skip,
-                "limit": limit,
-                "sort": sort,
-                "metadata_json": metadata_filters,
-                "date_created_gte": date_created_gte,
-                "date_created_lte": date_created_lte,
-            },
-        )
-
-        return [Chunk(**document) for document in results]
+    user_id: Optional[str] = None
+    date_created: Optional[datetime] = None
 
     def list_files(
         self,
         skip=0,
         limit=500,
         sort="date_created",
-        metadata_filters=None,
-        date_created_gte=None,
-        date_created_lte=None,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[File]:
         """
         Lists files in the context base with various filtering, sorting, and pagination options.
 
@@ -102,14 +41,6 @@ class Context:
         sort : str, optional
             The field to sort by (default is "date_created").
             Reverse with "-date_created"
-        metadata_filters : dict, optional
-            A dictionary of metadata fields to filter results (default is None).
-        date_created_gte : datetime, optional
-            The minimum creation date of files to list (default is None).
-            ISO 8601 Date Format Example: "2023-01-20T13:01:02Z"
-        date_created_lte : datetime, optional
-            The maximum creation date of files to list (default is None).
-            ISO 8601 Date Format Example: "2023-01-20T13:01:02Z"
 
         Returns
         -------
@@ -117,63 +48,22 @@ class Context:
             A list of dictionaries, each representing a file with its metadata.
 
         """
-        files: List[Dict[str, Any]] = self._client.post(
+        data: Dict[str, Any] = self._client.post(
             self._urls.context_files(),
             json={
-                "context_name": self.name,
+                "contextName": self.name,
                 "skip": skip,
                 "limit": limit,
-                "date_created_gte": date_created_gte,
-                "date_created_lte": date_created_lte,
-                "metadata_json": metadata_filters,
                 "sort": sort,
             },
         )
-        return files
+        return [
+            File(**{field.name: file.get(field.name) for field in dataclasses.fields(File)}) for file in data["files"]
+        ]
 
-    def delete_files(self, file_names: list[str]) -> None:
-        """
-        Deletes a list of files from the knowledge base.
-
-        Parameters
-        ----------
-        file_names : list[str]
-            A list of filenames as strings that are to be deleted.
-
-        Returns
-        -------
-        None
-
-        """
-        self._client.delete(
-            self._urls.context_files(),
-            json={
-                "file_names": file_names,
-                "knowledgebase_names": [self.name],
-            },
-        )
-
-    def delete_duplicate_files(self) -> None:
-        """
-
-        Deletes duplicate files by file_name in the context
-
-        The most recent file for each duplicate file_name is retained
-
-
-        Returns
-        -------
-        None
-
-        """
-        self._client.delete(
-            self._urls.context_delete_duplicate_files(),
-            json={
-                "context_name": self.name,
-            },
-        )
-
-    def upload_file(self, file_path: Union[str, Path], metadata: Optional[dict] = None) -> list[str]:
+    def upload_files(
+        self, file_paths: Union[list[str], list[Path]], metadata: Optional[dict] = None, max_chunk_size: int = 600
+    ) -> None:
         """
         Uploads a file to the context.
 
@@ -182,18 +72,17 @@ class Context:
 
         Parameters
         ----------
-        file_path : Union[str, Path]
-            The path to the file to be uploaded. Can be a string or a Path object.
+        file_paths : Union[str, Path]
+            The paths to the files to be uploaded. Can be a strings or a Path objects.
         metadata : Optional[dict], optional
-            A dictionary containing metadata for the file. The keys "file_name", "knowledge_base",
+            A dictionary containing metadata for the file. The keys "file_name",
             "user_id", "file_path", and "file_id" are reserved and cannot be used.
             If provided, it should not contain any of these keys. The default is None, which means
-            no metadata will be associated with the file.
+            no metadata will be associated with the files.
 
-        Returns
-        -------
-        list[str]
-            A list of pipeline run IDs generated after the file is uploaded.
+        max_chunk_size : int, optional
+            The maximum size of the resulting chunks in words
+
 
         Raises
         ------
@@ -203,83 +92,39 @@ class Context:
 
         """
         if metadata is not None:
-            if any(
-                key in metadata.keys() for key in ["file_name", "knowledge_base", "user_id", "file_path", "file_id"]
-            ):
-                msg = '"file_name", "knowledge_base", "user_id", "namespace", "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
+            if any(key in metadata.keys() for key in ["file_name", "user_id", "file_path", "file_id"]):
+                msg = '"file_name", "user_id", "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
                 raise ValueError(msg)
             metadata_json = json.dumps(metadata)
         else:
             metadata_json = None
 
-        file_path = Path(file_path)
-        suffix = file_path.suffix
+        files_to_upload = []
 
-        if suffix not in SUPPORTED_FILE_TYPES:
-            msg = f"{suffix} files are not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
-            raise ValueError(msg)
+        for _file_path in file_paths:
+            file_path = Path(_file_path)
 
-        file_path = file_path.expanduser().resolve()
+            if not file_path.exists():
+                raise ValueError(f"The file at {file_path} does not exist.")
 
-        with open(file_path, "rb") as file:
-            files = {"files": (str(file_path), file)}
-            data = {"context_name": self.name}
-            if metadata_json:
-                data.update({"metadata_json": metadata_json})
+            suffix = file_path.suffix
 
-            run_ids = self._client.post(self._urls.context_upload(), data=data, files=files)
-        return run_ids
-
-    def upload_text(self, text: str, file_name: str, metadata: Optional[dict] = None) -> None:
-        """
-        Uploads a text string as a file to a knowledge base with optional metadata.
-
-        Parameters
-        ----------
-        text : str
-            The text content to be uploaded.
-        file_name : str
-            The name of the file to be created. If the provided file_name does not end with '.txt',
-            it is automatically modified to end with this extension.
-        metadata : dict, optional
-            A dictionary containing metadata for the upload. There are reserved keys that
-            cannot be used: 'file_name', 'knowledge_base', 'user_id',
-            'file_path', and 'file_id'. If any of these keys are present, a ValueError is raised.
-
-        Raises
-        ------
-        ValueError
-            If any reserved key is present in the metadata dictionary.
-
-
-        """
-        if metadata is not None:
-            if any(
-                key in metadata.keys()
-                for key in ["file_name", "knowledge_base", "user_id", "namespace", "file_path", "file_id"]
-            ):
-                msg = '"file_name", "knowledgebase_name", "user_id",, "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
+            if suffix not in SUPPORTED_FILE_TYPES:
+                msg = f"{suffix} files are not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
                 raise ValueError(msg)
-            metadata_json = json.dumps(metadata)
-        else:
-            metadata_json = None
 
-        file = io.StringIO(text)
+            file_path = file_path.expanduser().resolve()
 
-        if not file_name.endswith(".txt"):
-            file_name = file_name.split(".")[0]
-            file_name += ".txt"
+            mime_type, _ = mimetypes.guess_type(file_path)
+            mime_type = mime_type or "application/octet-stream"
+            files_to_upload.append(("files", (file_path.name, file_path.read_bytes(), mime_type)))
 
-        files = {"files": (file_name, file)}
-        data = {"context_name": self.name}
-        if metadata_json:
-            data.update({"metadata_json": metadata_json})
+        data = {"context_name": self.name, "max_chunk_size": max_chunk_size, "metadata_json": metadata_json}
 
-        self._client.post(self._urls.upload(), data=data, files=files)
-        file.close()
+        self._client.post(self._urls.context_upload(), data=data, files=files_to_upload)
 
     def upload_from_directory(
-        self, directory: Union[str, Path], metadata: Optional[Union[dict, List[dict]]] = None
+        self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 600
     ) -> None:
         """
         Uploads files from a given directory to a context.
@@ -290,16 +135,14 @@ class Context:
         ----------
         directory : Union[str, Path]
             The path to the directory containing the files to be uploaded. Can be a string or a Path object.
-        metadata : Optional[Union[dict, List[dict]]], optional
-            Metadata associated with the files to be uploaded. This can be a single dictionary applied to all files,
-            or a list of dictionaries with one dictionary for each file. If a list is provided, its length must match
-            the number of files. If omitted or `None`, no metadata will be applied.
+
+        metadata : Optional[dict], optional
+            Metadata associated with the files to be uploaded.
 
         Raises
         ------
         ValueError
-            If the provided directory is not an actual directory or if the length of the metadata list does not match
-            the number of files to be uploaded.
+            If the provided directory is not an actual directory or no valid files are found
 
         """
         directory = Path(directory).expanduser().resolve()
@@ -308,64 +151,88 @@ class Context:
             msg = "You must provide a direcotry"
             raise ValueError(msg)
         directory = str(directory)
-        all_files = [os.path.join(directory, file) for file in os.listdir(directory)]
+
+        all_files = [os.path.join(dp, f) for dp, _, filenames in os.walk(directory) for f in filenames]
+
         files_to_upload = [file for file in all_files if file.endswith(SUPPORTED_FILE_TYPES)]
+
+        if not files_to_upload:
+            raise ValueError("No supported files found")
 
         metadata = metadata or {}
 
-        if isinstance(metadata, list):
-            if len(metadata) != len(files_to_upload):
-                msg = "Metadata list len does not match the number of files in directory"
-                raise ValueError(msg)
-
-        elif isinstance(metadata, dict):
-            metadata = [metadata] * len(files_to_upload)
-        else:
-            raise ValueError("Invalid metadata object")
-
-        for file_path, file_metadata in zip(files_to_upload, metadata):
-            self.upload_file(file_path, file_metadata)
+        self.upload_files(files_to_upload, metadata, max_chunk_size=max_chunk_size)
 
     def query(
         self,
-        override_args: dict[str, Any] | None = None,
+        query: str,
+        top_k: int = 10,
+        *,
+        semantic_weight: float = 0.5,
+        full_text_weight: float = 0.5,
+        rrf_k: int = 60,
+        include_embedding: bool = False,
     ) -> List[Chunk]:
         """
-        Runs the query pipeline with optional override arguments.
+        Runs a hybrid query using semantic and full-text search
+        against the context.
 
         Parameters
         ----------
-        override_args : dict[str, Any], optional
-            A dictionary of step names and step_args to override the default pipeline arguments, by default None.
+        query : str
+            The query string to search for.
+        semantic_weight : float, optional
+            The weight given to semantic search results, by default 0.5.
+        full_text_weight : float, optional
+            The weight given to full-text search results, by default 0.5.
+            this is uses key word search to compliment semantic search results
+        rrf_k : int, optional
+            The reciprocal rank fusion parameter for combining semantic and full-text search scores, by default 60.
+        top_k : int, optional
+            The number of top results to return, by default 10.
+        include_embedding : bool, optional
+            Flag to include the embedding in the returned Chunk objects, by default False.
 
         Returns
         -------
         List[Chunk]
-            A list of Chunk objects that are the result of running the pipeline with the specified parameters.
-
+            A list of Chunk objects that are the result of running the query with the specified parameters.
 
         Examples
         --------
         >>> context = oc.Context("my_context")
-        >>> query = "What are consequences of inventing a computer?"
-        >>> retriever_top_k = 50
-        >>> top_k = 5
-        >>> override_args = {
-        ...     "retriever": {
-        ...         "top_k": retriever_top_k,
-        ...         "query": query,
-        ...     },
-        ...     "reranker": {"top_k": top_k, "query": query},
-        ... }
-        >>> chunks = context.query(override_args)
-
+        >>> query_str = "What are consequences of inventing a computer?"
+        >>> chunks = context.query(
+        ...     query=query_str,
+        ...     semantic_weight=0.7,
+        ...     full_text_weight=0.3,
+        ...     top_k=5
+        ... )
         """
-        override_args = override_args or {}
+        if not query:
+            raise ValueError("The query string must not be empty.")
 
-        params = {"context_name": self.name, "override_args": override_args}
+        if not (0 <= semantic_weight <= 1):
+            raise ValueError("semantic_weight must be between 0 and 1.")
+
+        if not (0 <= full_text_weight <= 1):
+            raise ValueError("full_text_weight must be between 0 and 1.")
+
+        if semantic_weight == 0 and full_text_weight == 0:
+            raise ValueError("Both semantic_weight and full_text_weight cannot be zero.")
+
+        params = {
+            "query": query,
+            "semanticWeight": semantic_weight,
+            "fullTextWeight": full_text_weight,
+            "rrfK": rrf_k,
+            "topK": top_k,
+            "includeEmbedding": include_embedding,
+            "contextName": self.name,
+        }
 
         return self._post_query(params)
 
     def _post_query(self, params: Dict[str, Any]) -> List[Chunk]:
         results = self._client.post(self._urls.context_query(), json=params)
-        return [Chunk(**document) for document in results["chunks"]]
+        return [Chunk(**chunk) for chunk in results["data"]]
