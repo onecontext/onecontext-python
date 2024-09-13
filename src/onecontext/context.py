@@ -23,12 +23,23 @@ class Context:
     user_id: Optional[str] = None
     date_created: Optional[datetime] = None
 
-    def list_files(self, skip=0, limit=500, sort="date_created", get_download_urls: bool = False) -> List[File]:
+    def list_files(
+        self,
+        *,
+        file_ids: Optional[list] = None,
+        skip=0,
+        limit=500,
+        sort="date_created",
+        get_download_urls: bool = False,
+    ) -> List[File]:
         """
         Lists files in the context base with various filtering, sorting, and pagination options.
 
         Parameters
         ----------
+        file_ids : list, optional
+            A list of file IDs to filter the files to be listed. If None, all files are listed.
+
         skip : int, optional
             The number of files to skip (default is 0).
         limit : int, optional
@@ -55,6 +66,7 @@ class Context:
                 "limit": limit,
                 "sort": sort,
                 "getDownloadUrls": get_download_urls,
+                "fileIds": file_ids,
             },
         )
 
