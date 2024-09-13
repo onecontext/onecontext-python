@@ -83,3 +83,4 @@ class File:
     status: str
     context_id: str
     metadata_json: Optional[Dict] = None
+    download_url: Optional[str] = None

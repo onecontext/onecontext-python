@@ -7,7 +7,12 @@ from onecontext.context import Context
 
 
 class OneContext:
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        extra_headers: Optional[Dict[str, Any]] = None,
+    ):
         """
         Initialize the OneContext client with an API key and base URL.
 
@@ -42,7 +47,7 @@ class OneContext:
 
         base_url = base_url or "https://app.onecontext.ai/api/v2/"
 
-        self._client = ApiClient(api_key)
+        self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)
 
     def create_context(self, name: str) -> Context:
@@ -61,11 +66,11 @@ class OneContext:
 
         """
         data = {"contextName": name}
-        self._client.post(self._urls.context_create(), json=data)
+        self._client.post(self._urls.context(), json=data)
         return Context(name, _client=self._client, _urls=self._urls)
 
     def delete_context(self, name: str) -> None:
-        self._client.delete(self._urls.context_delete(name))
+        self._client.delete(self._urls.context(), json={"contextName": name})
 
     def list_contexts(self) -> List[Context]:
         """
@@ -79,7 +84,7 @@ class OneContext:
             A list of Context objects.
 
         """
-        response = self._client.get(self._urls.context_list())
+        response = self._client.get(self._urls.context())
 
         return [Context(**ctxt, _client=self._client, _urls=self._urls) for ctxt in response["data"]]
 

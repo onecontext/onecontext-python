@@ -23,12 +23,7 @@ class Context:
     user_id: Optional[str] = None
     date_created: Optional[datetime] = None
 
-    def list_files(
-        self,
-        skip=0,
-        limit=500,
-        sort="date_created",
-    ) -> List[File]:
+    def list_files(self, skip=0, limit=500, sort="date_created", get_download_urls: bool = False) -> List[File]:
         """
         Lists files in the context base with various filtering, sorting, and pagination options.
 
@@ -42,12 +37,16 @@ class Context:
             The field to sort by (default is "date_created").
             Reverse with "-date_created"
 
+        get_download_urls : bool, optional
+            If True, also returns download URLs for each file (default is False).
+
         Returns
         -------
         List[Dict[str, Any]]
             A list of dictionaries, each representing a file with its metadata.
 
         """
+
         data: Dict[str, Any] = self._client.post(
             self._urls.context_files(),
             json={
@@ -55,11 +54,17 @@ class Context:
                 "skip": skip,
                 "limit": limit,
                 "sort": sort,
+                "getDownloadUrls": get_download_urls,
             },
         )
-        return [
-            File(**{field.name: file.get(field.name) for field in dataclasses.fields(File)}) for file in data["files"]
+
+        file_dicts = [
+            {field.name: file.get(field.name) for field in dataclasses.fields(File)} for file in data["files"]
         ]
+
+        files = [File(**file_dict) for file_dict in file_dicts]
+
+        return files
 
     def upload_files(
         self, file_paths: Union[list[str], list[Path]], metadata: Optional[dict] = None, max_chunk_size: int = 600
@@ -119,7 +124,7 @@ class Context:
             mime_type = mime_type or "application/octet-stream"
             files_to_upload.append(("files", (file_path.name, file_path.read_bytes(), mime_type)))
 
-        data = {"context_name": self.name, "max_chunk_size": max_chunk_size, "metadata_json": metadata_json}
+        data = {"contextName": self.name, "chunkSize": max_chunk_size, "metadata": metadata_json}
 
         self._client.post(self._urls.context_upload(), data=data, files=files_to_upload)
 
