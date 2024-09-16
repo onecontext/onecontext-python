@@ -47,6 +47,7 @@ path = "src/onecontext/__about__.py"
 dependencies = [
     "coverage[toml]>=6.5",
     "pytest",
+    "pytest-xdist",
     "ptpython",
     "IPython",
     "pudb",
