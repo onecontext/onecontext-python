@@ -52,6 +52,7 @@ def test_list_chunks(context_with_files: Context):
     [
         ("sample query", None, 10),
         ("sample query", {"file_tag": {"$eq": "file_1"}}, 10),
+        ("sample query", {"file_tag": {"$eq": "file_2"}}, 10),
         ("sample query", {"file_tag": {"$eq": "nonexistent_tag"}}, 0),
     ],
 )
