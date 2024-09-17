@@ -27,20 +27,6 @@ def context_with_files(context: Context, file_paths: list):
     assert len(files) > 0
 
 
-def test_search_chunks(context_with_files: Context):
-    chunks = context_with_files.search("sample query", top_k=10)
-    all_meta = {chunk.metadata_json for chunk in chunks}
-
-    breakpoint()
-    assert len(chunks) == 10
-    chunks = context_with_files.search("sample query", top_k=10, metadata_filters={"file_tag": {"$eq": "file_1"}})
-
-    contrained_meta = {chunk.metadata for chunk in chunks}
-
-    breakpoint()
-    assert len(chunks) == 10
-
-
 def test_list_chunks(context_with_files: Context):
     files = context_with_files.list_files()
 
@@ -57,5 +43,24 @@ def test_list_chunks(context_with_files: Context):
     chunks_metadata_filtered = context_with_files.list_chunks(metadata_filters=metadata_filters, limit=100)
 
     for chunk in chunks_metadata_filtered:
-        if chunk.metadata_json and not chunk.metadata_json.get("file_tag") == "file_1":
-            assert False, "Chunk filtered by metadata does not contain correct metadata tag."
+        assert chunk.metadata_json
+        assert chunk.metadata_json.get("file_tag") == "file_1":
+
+@pytest.mark.parametrize(
+    "query, metadata_filters, expected_count",
+    [
+        ("sample query", None, 10),
+        ("sample query", {"file_tag": {"$eq": "file_1"}}, 10),
+        ("sample query", {"file_tag": {"$eq": "nonexistent_tag"}}, 0),
+    ],
+)
+def test_search_chunks_parametrized(
+    context_with_files: Context, query: str, metadata_filters: dict, expected_count: int
+):
+    chunks = context_with_files.search(query, top_k=10, metadata_filters=metadata_filters)
+    assert len(chunks) == expected_count
+
+    if metadata_filters:
+        file_tag = metadata_filters["file_tag"]["$eq"]
+        for chunk in chunks:
+            assert chunk.metadata_json.get("file_tag") == file_tag

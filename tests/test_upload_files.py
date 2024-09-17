@@ -28,10 +28,13 @@ def download_file(file_url, local_path):
 
 def test_upload_files(client: OneContext, context: Context, file_paths: list):
     metadata = [{"file_tag": "file_1"}, {"file_tag": "file_2"}]
+
     context.upload_files(file_paths, metadata=metadata)
+
     wait_for_file_processing(context)
 
     files = context.list_files()
+
     file_names_and_meta = {os.path.basename(file_path): meta for file_path, meta in zip(file_paths, metadata)}
 
     for file in files:
