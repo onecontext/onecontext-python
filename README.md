@@ -80,6 +80,7 @@ files_metadata = [{"tag": "file_1_tag"}, {"tag": "file_2_tag"}]
 context.upload_files(file_paths,metadata=files_metadata)
 ```
 You can use this metadata to filter searches against your context.
+For more details, see the [OneContext Structured Query Language](#onecontext-structured-query-language) section.
 
 #### List files available in a context
 
@@ -130,13 +131,13 @@ chunks present in the context which have matchin metadata:
 
 ```python
 context = oc.Context("my_context")
-results = context.search(
+chunks = context.search(
     query="query_string_to_search",
     semantic_weight=0.7,
     full_text_weight=0.3,
     top_k=5,
     rrf_k=50,
-  metadata_filters = {"tag" : {"$eq" : "file_1_tag"}}
+    metadata_filters = {"tag" : {"$eq" : "file_1_tag"}}
 )
 ```
 More details on the arguments for this method:
@@ -201,6 +202,13 @@ metadata_filters = { "$and": [
   {"my_score": {"$gt" : 0.5}},
   {"my_score_other_score" : {"$gt" :0.4}}
 ]}
+
+context = oc.Context("my_context")
+chunks = context.search(
+    query="query_string_to_search",
+    metadata_filters = metadata_filters,
+)
+
 ```
 
 
