@@ -200,7 +200,7 @@ metadata_filters = { "$and": [
   ]},
   {"tag": {"$eq": "test"}},
   {"my_score": {"$gt" : 0.5}},
-  {"my_score_other_score" : {"$gt" :0.4}}
+  {"my_other_score" : {"$gt" :0.4}}
 ]}
 
 context = oc.Context("my_context")
