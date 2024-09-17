@@ -11,7 +11,7 @@ This is the official Python SDK for the OneContext platform. Use this SDK to con
 
 ## What is OneContext?
 
-OneContext is a platform that enables software engineers to compose and deploy custom RAG (Reading comprehension, Answer generation, and Generative) pipelines on state-of-the-art infrastructure, all without any hassle. Just create a context and add files to it. You can then query your context using vector search, hybrid search, etc. OneContext takes care of all the infrastructure details behind the scenes (SSL intents, DNS, Kubernetes clusters, embedding models, GPUs, auto-scaling, load balancing, etc).
+OneContext is a platform that enables software engineers to compose and deploy custom RAG (Reading comprehension, Answer generation, and Generative) pipelines on state-of-the-art infrastructure, all without any hassle. Just create a context and add files to it. You can then search your context using vector search, hybrid search, etc. OneContext takes care of all the infrastructure details behind the scenes (SSL intents, DNS, Kubernetes clusters, embedding models, GPUs, auto-scaling, load balancing, etc).
 
 
 ## Quick Start
@@ -72,6 +72,15 @@ context.upload_from_directory(“path_to_your_directory")
 ```
 In the above code, replace `"path_to_your_directory"` with the actual path to your directory.
 
+#### You can add metadata to files at upload time
+
+```python
+file_paths = ['path_to_file_1.pdf', 'path_to_file_2.pdf']
+files_metadata = [{"tag": "file_1_tag"}, {"tag": "file_2_tag"}]
+context.upload_files(file_paths,metadata=files_metadata)
+```
+You can use this metadata to filter searches against your context.
+
 #### List files available in a context
 
 ```python
@@ -79,7 +88,24 @@ files = context.list_files()
 for file in files:
     print(file)
 ```
-This piece of code will print all files available in the specific context.
+
+You can also generate a download link for a file using the file_id:
+
+```python
+file_url = context.get_download_url(file_id=file.id)
+response = requests.get(file_url)
+with open(local_path, "wb") as f:
+    f.write(response.content)
+```
+
+> **Note:**
+Download urls will be valid for 5 minutes after they have been generated.
+
+#### List the chunks available in a context
+
+```python
+chunks = context.list_chunks(limit=50)
+```
 
 #### List all the contexts
 
@@ -98,26 +124,85 @@ oc.delete_context("my_context")
 
 ### Search through your Context
 
-The following piece of code will execute a query and search across all documents present in the context:
+The following piece of code will execute a query and search across all
+chunks present in the context which have matchin metadata:
+
 
 ```python
 context = oc.Context("my_context")
-results = context.query(
+results = context.search(
     query="query_string_to_search",
     semantic_weight=0.7,
     full_text_weight=0.3,
     top_k=5,
     rrf_k=50,
+  metadata_filters = {"tag" : {"$eq" : "file_1_tag"}}
 )
 ```
 More details on the arguments for this method:
 - `query`: Query string that will be embedded used for the search.
 - `top_k`: The maximum number of "chunks" that will be retrieved.
-- `semantic_weight`: A value representing the weight of the relevance of the semantic similarity of the data in your context.
-- `full_text_weight`: A weight value for the relevance of the actual words in the context using key word search.
+- `semantic_weight`: A value representing the weight of the relevance of the
+semantic similarity of the data in your context.
+- `full_text_weight`: A weight value for the relevance of the actual words in
+the context using key word search.
 - `rrfK`: quite a technical parameter which determines how we merge the scores
 for semantic, and fullText weights. For more see
 [here](https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking)
+- `metadata_filters`: A dictionary of criteria used to filter results based on
+metadata. See the OneContext Structured Query Language section below for the
+syntax details
+
+# OneContext Structured Query Language
+
+OneContext allows you to use a custom "Structured Query Language" to filter
+the chunks in your context.
+
+The syntax is quite similar to what you might find in no-SQL databases like
+MongoDB, even though it operates on a SQL database at its core.
+
+The syntax is based around the application of `operators`. There are _two_
+levels of operators. You can interpret the two levels as "aggregators" and
+"comparators".
+
+### Aggregators
+The aggregator operators you can use are:
+
+| Key          | Value Description                                                                                                                                           |
+|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `$and`       | Returns True i.f.f. _all_ of the conditions in this block return True.
+| `$or`        | Returns True if _any_ of the conditions in this block return True.
+
+### Comparators
+The comparator operators you can use are:
+
+| Key          | Value Description                                                                   | Suppled Value Type          | Returned Value Type          |
+|--------------|-------------------------------------------------------------------------------------|-----------------------------|------------------------------|
+| `$eq`        | Returns True if the value returned from the DB is equal to the supplied value.      |`string | int | float`       | `string | int | float`       |
+| `$gt`        | Returns True if the value returned from the DB is greater than the supplied value.  |`int | float`                | `int | float`                |
+| `$lt`        | Returns True if the value returned from the DB is less than the supplied value.     |`int | float`                | `int | float`                |
+| `$in`        | Returns True if the value returned from the DB is contained by the supplied array.  |`array<string | int | float>`| `string | int | float`       |
+| `$contains`  | Returns True if the array value returned from the DB contains the supplied value.   |`string | int | float`       | `array<string | int | float>`|
+
+
+## Putting it all together
+
+Using the above building blocks, it's pretty simple to put together quite an advanced composite filter across your embeddings at runtime.
+
+For example in Python you could define some metadata filters like the below:
+
+``` python
+metadata_filters = { "$and": [
+  {"$or": [
+    {"department": {"$eq":"accounts"}},
+    {"department": { "$in": ["finance", "compliance"}}
+  ]},
+  {"tag": {"$eq": "test"}},
+  {"my_score": {"$gt" : 0.5}},
+  {"my_score_other_score" : {"$gt" :0.4}}
+]}
+```
+
 
 ## License
 
