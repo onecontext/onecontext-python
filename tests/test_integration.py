@@ -22,5 +22,5 @@ def test_integration(context: Context, test_files_directory: str):
     wait_for_file_processing(context)
     files = context.list_files()
     assert len(files) == 2
-    chunks = context.query("sample query", top_k=10)
+    chunks = context.search("sample query", top_k=10)
     assert len(chunks) == 10

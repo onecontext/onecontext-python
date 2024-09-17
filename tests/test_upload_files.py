@@ -11,9 +11,9 @@ from onecontext.main import OneContext
 
 @pytest.fixture
 def context(client: OneContext):
-    context_name = "test_context"
+    context_name = "test_context_"
     current_file_name = os.path.splitext(os.path.basename(__file__))[0]
-    context_name += "_" + current_file_name
+    context_name += "-" + current_file_name
     context = client.create_context(context_name)
     yield context
     client.delete_context(context_name)
@@ -26,21 +26,26 @@ def download_file(file_url, local_path):
             f.write(response.content)
 
 
-def test_upload_files(context: Context, file_paths: list):
-    context.upload_files(file_paths)
+def test_upload_files(client: OneContext, context: Context, file_paths: list):
+    metadata = [{"file_tag": "file_1"}, {"file_tag": "file_2"}]
+    context.upload_files(file_paths, metadata=metadata)
     wait_for_file_processing(context)
 
-    files = context.list_files(get_download_urls=True)
+    files = context.list_files()
+    file_names_and_meta = {os.path.basename(file_path): meta for file_path, meta in zip(file_paths, metadata)}
+
+    for file in files:
+        assert file_names_and_meta[file.name] == file.metadata_json
+
     assert len(files) == 2
 
     file_map = {f.name: f for f in files}
-
     for original_path in file_paths:
         local_filename = os.path.basename(original_path)
         file_to_download = file_map[local_filename]
 
         with tempfile.NamedTemporaryFile() as temp_file:
-            download_file(file_to_download.download_url, temp_file.name)
+            download_file(context.get_download_url(file_to_download.id), temp_file.name)
 
             with open(original_path, "rb") as original:
                 temp_file.seek(0)
