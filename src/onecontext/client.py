@@ -25,14 +25,20 @@ class URLS:
     def context_files(self) -> str:
         return self._join_base("context/file")
 
+    def context_files_download_url(self) -> str:
+        return self._join_base("context/file/presigned-download-url/")
+
+    def context_chunks(self) -> str:
+        return self._join_base("context/chunk/")
+
     def context(self) -> str:
         return self._join_base("context")
 
     def context_upload(self) -> str:
         return self._join_base("context/file/upload")
 
-    def context_query(self) -> str:
-        return self._join_base("context/query")
+    def context_search(self) -> str:
+        return self._join_base("context/chunk/search")
 
 
 class ApiClient:

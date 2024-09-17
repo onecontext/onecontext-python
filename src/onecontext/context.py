@@ -1,5 +1,4 @@
 import dataclasses
-import io
 import json
 import mimetypes
 import os
@@ -79,7 +78,7 @@ class Context:
         return files
 
     def upload_files(
-        self, file_paths: Union[list[str], list[Path]], metadata: Optional[dict] = None, max_chunk_size: int = 600
+        self, file_paths: Union[list[str], list[Path]], metadata: Optional[list[dict]] = None, max_chunk_size: int = 600
     ) -> None:
         """
         Uploads a file to the context.
@@ -91,11 +90,10 @@ class Context:
         ----------
         file_paths : Union[str, Path]
             The paths to the files to be uploaded. Can be a strings or a Path objects.
-        metadata : Optional[dict], optional
-            A dictionary containing metadata for the file. The keys "file_name",
+
+        metadata : Optional[list[dict]], optional
+            A list of dictionaries containing metadata for each file. The keys "file_name",
             "user_id", "file_path", and "file_id" are reserved and cannot be used.
-            If provided, it should not contain any of these keys. The default is None, which means
-            no metadata will be associated with the files.
 
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in words
@@ -108,14 +106,6 @@ class Context:
             If the file type is not supported (not in SUPPORTED_FILE_TYPES).
 
         """
-        if metadata is not None:
-            if any(key in metadata.keys() for key in ["file_name", "user_id", "file_path", "file_id"]):
-                msg = '"file_name", "user_id", "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
-                raise ValueError(msg)
-            metadata_json = json.dumps(metadata)
-        else:
-            metadata_json = None
-
         files_to_upload = []
 
         for _file_path in file_paths:
@@ -136,7 +126,20 @@ class Context:
             mime_type = mime_type or "application/octet-stream"
             files_to_upload.append(("files", (file_path.name, file_path.read_bytes(), mime_type)))
 
-        data = {"contextName": self.name, "chunkSize": max_chunk_size, "metadata": metadata_json}
+        data = [("contextName", self.name), ("maxChunkSize", max_chunk_size)]
+
+        if metadata is not None:
+            for meta in metadata:
+                if any(key in meta.keys() for key in ["file_name", "user_id", "file_path", "file_id"]):
+                    msg = '"file_name", "user_id", "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
+                    raise ValueError(msg)
+
+            if len(metadata) != len(file_paths):
+                raise ValueError("Number of metadata entries and files do not match.")
+
+            metadata_json = [("metadataJson", json.dumps(meta)) for meta in metadata]
+
+            data.extend(metadata_json)
 
         self._client.post(self._urls.context_upload(), data=data, files=files_to_upload)
 
@@ -155,6 +158,7 @@ class Context:
 
         metadata : Optional[dict], optional
             Metadata associated with the files to be uploaded.
+            Note, the same metadata will be associated with every file in the directory
 
         Raises
         ------
@@ -178,9 +182,10 @@ class Context:
 
         metadata = metadata or {}
 
-        self.upload_files(files_to_upload, metadata, max_chunk_size=max_chunk_size)
+        for file_path in files_to_upload:
+            self.upload_files([file_path], [metadata], max_chunk_size=max_chunk_size)
 
-    def query(
+    def search(
         self,
         query: str,
         top_k: int = 10,
@@ -189,6 +194,7 @@ class Context:
         full_text_weight: float = 0.5,
         rrf_k: int = 60,
         include_embedding: bool = False,
+        metadata_filters: Optional[dict] = None,
     ) -> List[Chunk]:
         """
         Runs a hybrid query using semantic and full-text search
@@ -209,6 +215,8 @@ class Context:
             The number of top results to return, by default 10.
         include_embedding : bool, optional
             Flag to include the embedding in the returned Chunk objects, by default False.
+        metadata_filters : Optional[dict[str, Any]], optional
+            A dictionary of filters based on metadata to apply to the chunk retrieval.
 
         Returns
         -------
@@ -248,8 +256,74 @@ class Context:
             "contextName": self.name,
         }
 
+        if metadata_filters is not None:
+            params.update({"metadataFilters": metadata_filters})
+
         return self._post_query(params)
 
     def _post_query(self, params: Dict[str, Any]) -> List[Chunk]:
-        results = self._client.post(self._urls.context_query(), json=params)
-        return [Chunk(**chunk) for chunk in results["data"]]
+        results = self._client.post(self._urls.context_search(), json=params)
+        return [Chunk(**chunk) for chunk in results]
+
+    def delete_file(self, file_id: str) -> None:
+        data = {"fileId": file_id}
+        self._client.post(self._urls.context_files(), json=data)
+
+    def get_download_url(self, file_id: str) -> str:
+        data = {"fileId": file_id}
+        result = self._client.post(self._urls.context_files_download_url(), json=data)
+        return result
+
+    def list_chunks(
+        self,
+        *,
+        metadata_filters: Optional[dict[str, Any]] = None,
+        limit: int = 50,
+        include_embedding: bool = False,
+        file_id: Optional[str] = None,
+    ) -> list[Chunk]:
+        """
+        Retrieves a list of Chunk objects from the context with optional filters.
+
+        Parameters
+        ----------
+        metadata_filters : Optional[dict[str, Any]], optional
+            A dictionary of filters based on metadata to apply to the chunk retrieval.
+        limit : int, optional
+            The maximum number of Chunk objects to return, by default 50.
+        include_embedding : bool, optional
+            Flag to include the embedding in the returned Chunk objects, by default False.
+        file_id : Optional[str], optional
+            A specific file ID to filter chunks by, by default None.
+
+        Returns
+        -------
+        list[Chunk]
+            A list of Chunk objects
+
+        Examples
+        --------
+        >>> context = oc.Context("my_context")
+        >>> file_id = "example-file-id"
+        >>> chunks = context.list_chunks(
+        ...     metadata_filters={'author': {'$eq' : 'Jane Doe'}},
+        ...     limit=20,
+        ...     include_embedding=,
+        ...     file_id=file_id
+        ... )
+        """
+        data = {
+            "contextName": self.name,
+            "limit": limit,
+            "includeEmbedding": include_embedding,
+        }
+
+        if metadata_filters is not None:
+            data.update({"metadataFilters": metadata_filters})
+
+        if file_id is not None:
+            data.update({"fileId": file_id})
+
+        chunk_dicts = self._client.post(self._urls.context_chunks(), json=data)
+        chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
+        return chunks

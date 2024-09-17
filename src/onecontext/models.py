@@ -48,6 +48,7 @@ class Chunk:
     semantic_score: Optional[float] = None
     fulltext_score: Optional[float] = None
     combined_score: Optional[float] = None
+    context_name: Optional[str] = None
 
 
 @dataclass
