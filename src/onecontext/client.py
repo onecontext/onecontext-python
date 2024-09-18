@@ -23,29 +23,32 @@ class URLS:
         return self._join_base("user/updateUserMeta")
 
     def context_files(self) -> str:
-        return self._join_base("context/files/list")
+        return self._join_base("context/file")
 
-    def context_create(self) -> str:
-        return self._join_base("context/create")
+    def context_files_download_url(self) -> str:
+        return self._join_base("context/file/presigned-download-url/")
 
-    def context_list(self) -> str:
-        return self._join_base("context/list")
+    def context_chunks(self) -> str:
+        return self._join_base("context/chunk/")
 
-    def context_delete(self, name: str) -> str:
-        return self._join_base(f"context/delete/{name}")
+    def context(self) -> str:
+        return self._join_base("context")
 
     def context_upload(self) -> str:
-        return self._join_base("jobs/files/add")
+        return self._join_base("context/file/upload")
 
-    def context_query(self) -> str:
-        return self._join_base("embeddings/get")
+    def context_search(self) -> str:
+        return self._join_base("context/chunk/search")
 
 
 class ApiClient:
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, extra_headers: Optional[Dict[str, Any]] = None) -> None:
         self.session = requests.Session()
         self.api_key = api_key
         self.session.headers.update(self._auth_headers)
+
+        if extra_headers is not None:
+            self.session.headers.update(extra_headers)
 
     @property
     def _auth_headers(self) -> Dict[str, str]:

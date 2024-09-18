@@ -48,6 +48,7 @@ class Chunk:
     semantic_score: Optional[float] = None
     fulltext_score: Optional[float] = None
     combined_score: Optional[float] = None
+    context_name: Optional[str] = None
 
 
 @dataclass
@@ -83,3 +84,4 @@ class File:
     status: str
     context_id: str
     metadata_json: Optional[Dict] = None
+    download_url: Optional[str] = None

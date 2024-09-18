@@ -2,12 +2,17 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from onecontext.client import URLS, ApiClient, ConfigurationError
+from onecontext.client import URLS, ApiClient, ApiError, ConfigurationError
 from onecontext.context import Context
 
 
 class OneContext:
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        extra_headers: Optional[Dict[str, Any]] = None,
+    ):
         """
         Initialize the OneContext client with an API key and base URL.
 
@@ -18,7 +23,7 @@ class OneContext:
             If not provided, the environment variable 'ONECONTEXT_API_KEY'
             will be used. Defaults to None.
         base_url : str, optional
-            The base URL for the OneContext API. Defaults to "https://api.onecontext.ai/v1/".
+            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v3/".
             Can be overridden with the environment variable 'ONECONTEXT_API_KEY'
 
         Raises
@@ -40,9 +45,9 @@ class OneContext:
         if base_url is None:
             base_url = os.environ.get("ONECONTEXT_BASE_URL")
 
-        base_url = base_url or "https://app.onecontext.ai/api/v2/"
+        base_url = base_url or "https://app.onecontext.ai/api/v3/"
 
-        self._client = ApiClient(api_key)
+        self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)
 
     def create_context(self, name: str) -> Context:
@@ -61,11 +66,11 @@ class OneContext:
 
         """
         data = {"contextName": name}
-        self._client.post(self._urls.context_create(), json=data)
+        self._client.post(self._urls.context(), json=data)
         return Context(name, _client=self._client, _urls=self._urls)
 
     def delete_context(self, name: str) -> None:
-        self._client.delete(self._urls.context_delete(name))
+        self._client.delete(self._urls.context(), json={"contextName": name})
 
     def list_contexts(self) -> List[Context]:
         """
@@ -79,9 +84,15 @@ class OneContext:
             A list of Context objects.
 
         """
-        response = self._client.get(self._urls.context_list())
+        response = self._client.get(self._urls.context())
 
         return [Context(**ctxt, _client=self._client, _urls=self._urls) for ctxt in response["data"]]
 
     def Context(self, name: str) -> Context:
-        return Context(name, _client=self._client, _urls=self._urls)
+        contexts = self._client.get(self._urls.context(), params={"contextName": name}).get("data")
+        if not contexts:
+            raise ApiError(f"Context {name} not found")
+        if len(contexts) > 1:
+            raise RuntimeError("unreachable: please contact support!")
+        context = contexts.pop()
+        return Context(**context, _client=self._client, _urls=self._urls)
