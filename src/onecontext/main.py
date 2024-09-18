@@ -23,7 +23,7 @@ class OneContext:
             If not provided, the environment variable 'ONECONTEXT_API_KEY'
             will be used. Defaults to None.
         base_url : str, optional
-            The base URL for the OneContext API. Defaults to "https://api.onecontext.ai/v1/".
+            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v3/".
             Can be overridden with the environment variable 'ONECONTEXT_API_KEY'
 
         Raises
@@ -45,7 +45,7 @@ class OneContext:
         if base_url is None:
             base_url = os.environ.get("ONECONTEXT_BASE_URL")
 
-        base_url = base_url or "https://app.onecontext.ai/api/v2/"
+        base_url = base_url or "https://app.onecontext.ai/api/v3/"
 
         self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)

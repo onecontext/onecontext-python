@@ -68,7 +68,7 @@ context.upload_files(['path_to_file_1.pdf', 'path_to_file_2.pdf'], max_chunk_siz
 #### You can also add a full directory of files
 
 ```python
-context.upload_from_directory(“path_to_your_directory")
+context.upload_from_directory("path_to_your_directory")
 ```
 In the above code, replace `"path_to_your_directory"` with the actual path to your directory.
 
@@ -177,13 +177,13 @@ The aggregator operators you can use are:
 ### Comparators
 The comparator operators you can use are:
 
-| Key          | Value Description                                                                   | Suppled Value Type          | Returned Value Type          |
-|--------------|-------------------------------------------------------------------------------------|-----------------------------|------------------------------|
-| `$eq`        | Returns True if the value returned from the DB is equal to the supplied value.      |`string | int | float`       | `string | int | float`       |
-| `$gt`        | Returns True if the value returned from the DB is greater than the supplied value.  |`int | float`                | `int | float`                |
-| `$lt`        | Returns True if the value returned from the DB is less than the supplied value.     |`int | float`                | `int | float`                |
-| `$in`        | Returns True if the value returned from the DB is contained by the supplied array.  |`array<string | int | float>`| `string | int | float`       |
-| `$contains`  | Returns True if the array value returned from the DB contains the supplied value.   |`string | int | float`       | `array<string | int | float>`|
+| Key          | Value Description                                                                   | Supplied Value Type | Returned Value Type          |
+|--------------|-------------------------------------------------------------------------------------|---------------------|------------------------------|
+| `$eq`        | Returns True if the value returned from the DB is equal to the supplied value.      | `string             | int | float`       | `string | int | float`       |
+| `$gt`        | Returns True if the value returned from the DB is greater than the supplied value.  | `int                | float`                | `int | float`                |
+| `$lt`        | Returns True if the value returned from the DB is less than the supplied value.     | `int                | float`                | `int | float`                |
+| `$in`        | Returns True if the value returned from the DB is contained by the supplied array.  | `array<string>`      | int | float>`| `string | int | float`       |
+| `$contains`  | Returns True if the array value returned from the DB contains the supplied value.   | `string             | int | float`       | `array<string | int | float>`|
 
 
 ## Putting it all together

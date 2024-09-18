@@ -169,7 +169,7 @@ class Context:
         directory = Path(directory).expanduser().resolve()
 
         if not directory.is_dir():
-            msg = "You must provide a direcotry"
+            msg = "You must provide a directory"
             raise ValueError(msg)
         directory = str(directory)
 
