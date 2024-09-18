@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from onecontext.client import URLS, ApiClient, ConfigurationError
+from onecontext.client import URLS, ApiClient, ApiError, ConfigurationError
 from onecontext.context import Context
 
 
@@ -89,4 +89,10 @@ class OneContext:
         return [Context(**ctxt, _client=self._client, _urls=self._urls) for ctxt in response["data"]]
 
     def Context(self, name: str) -> Context:
-        return Context(name, _client=self._client, _urls=self._urls)
+        contexts = self._client.get(self._urls.context(), params={"contextName": name}).get("data")
+        if not contexts:
+            raise ApiError(f"Context {name} not found")
+        if len(contexts) > 1:
+            raise RuntimeError("unreachable: please contact support!")
+        context = contexts.pop()
+        return Context(**context, _client=self._client, _urls=self._urls)
