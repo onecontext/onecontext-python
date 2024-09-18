@@ -93,9 +93,13 @@ for file in files:
 You can also generate a download link for a file using the file_id:
 
 ```python
+import requests
+files = context.list_files()
+file = files[0]
 file_url = context.get_download_url(file_id=file.id)
 response = requests.get(file_url)
-with open(local_path, "wb") as f:
+path = f"./local_folder/{file.name}"
+with open(path, "wb") as f:
     f.write(response.content)
 ```
 
