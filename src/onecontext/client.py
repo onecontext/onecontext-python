@@ -28,6 +28,12 @@ class URLS:
     def context_files_download_url(self) -> str:
         return self._join_base("context/file/presigned-download-url/")
 
+    def context_files_upload_url(self) -> str:
+        return self._join_base("context/file/presigned-upload-url/")
+
+    def context_files_upload_processed(self) -> str:
+        return self._join_base("context/file/process-uploaded/")
+
     def context_chunks(self) -> str:
         return self._join_base("context/chunk/")
 

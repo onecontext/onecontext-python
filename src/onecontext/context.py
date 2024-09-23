@@ -7,10 +7,24 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import requests
+
 from onecontext.client import URLS, ApiClient
 from onecontext.models import Chunk, File
 
 SUPPORTED_FILE_TYPES = (".pdf", ".docx")
+
+
+def parse_file_path(file_path: str | Path):
+    file_path = Path(file_path)
+    if not file_path.exists():
+        raise ValueError(f"The file at {file_path} does not exist.")
+
+    suffix = file_path.suffix
+    if suffix not in SUPPORTED_FILE_TYPES:
+        msg = f"{suffix} files are not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
+        raise ValueError(msg)
+    return file_path
 
 
 @dataclass
@@ -77,19 +91,45 @@ class Context:
 
         return files
 
+    def _get_upload_url(self, file_name: str):
+        data = {"fileName": file_name, "contextName": self.name, "contextId": self.id}
+        response = self._client.post(self._urls.context_files_upload_url(), json=data)
+
+        upload_url = response.get("presignedUrl")
+        file_id = response.get("fileId")
+        storage_uri = response.get("gcsUri")
+
+        return upload_url, file_id, storage_uri
+
+    def _notify_uploaded(self, file_id, file_name, file_mime_type, gcs_uri, metadata_json, max_chunk_size=600):
+        data = {
+            "fileId": file_id,
+            "fileName": file_name,
+            "fileType": file_mime_type,
+            "gcsUri": gcs_uri,
+            "contextName": self.name,
+            "contextId": self.id,
+            "maxChunkSize": max_chunk_size,
+            "metadataJson": metadata_json,
+        }
+
+        self._client.post(self._urls.context_files_upload_processed(), json=data)
+
     def upload_files(
         self, file_paths: Union[list[str], list[Path]], metadata: Optional[list[dict]] = None, max_chunk_size: int = 600
     ) -> None:
         """
-        Uploads a file to the context.
+        Uploads files to the context using presigned URLs.
 
-        This method uploads a file specified by `file_path` to the context, optionally
-        associating it with metadata.
+        This method uploads files specified by `file_paths` to the context, optionally
+        associating them with metadata. It retrieves a presigned URL for each file,
+        uploads the file to the presigned URL, and then notifies the context about the
+        uploaded file.
 
         Parameters
         ----------
         file_paths : Union[str, Path]
-            The paths to the files to be uploaded. Can be a strings or a Path objects.
+            The paths to the files to be uploaded. Can be strings or Path objects.
 
         metadata : Optional[list[dict]], optional
             A list of dictionaries containing metadata for each file. The keys "file_name",
@@ -98,50 +138,34 @@ class Context:
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in words
 
-
         Raises
         ------
         ValueError
             If any reserved keys are present in the metadata.
             If the file type is not supported (not in SUPPORTED_FILE_TYPES).
-
         """
-        files_to_upload = []
+        if metadata and len(metadata) != len(file_paths):
+            raise ValueError("Number of metadata entries and files do not match.")
 
-        for _file_path in file_paths:
-            file_path = Path(_file_path)
+        _file_paths = [parse_file_path(path) for path in file_paths]
 
-            if not file_path.exists():
-                raise ValueError(f"The file at {file_path} does not exist.")
+        for index, file_path in enumerate(_file_paths):
+            _mime_type = mimetypes.guess_type(file_path)
 
-            suffix = file_path.suffix
+            mime_type = _mime_type[0] if _mime_type else "application/octet-stream"
 
-            if suffix not in SUPPORTED_FILE_TYPES:
-                msg = f"{suffix} files are not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
-                raise ValueError(msg)
+            file_name = file_path.name
+            file_content = file_path.read_bytes()
 
-            file_path = file_path.expanduser().resolve()
+            gcs_upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
+            # Upload the file to the presigned URL
+            response = requests.put(gcs_upload_url, data=file_content, headers={"Content-Type": mime_type})
 
-            mime_type, _ = mimetypes.guess_type(file_path)
-            mime_type = mime_type or "application/octet-stream"
-            files_to_upload.append(("files", (file_path.name, file_path.read_bytes(), mime_type)))
+            if response.status_code != 200:
+                raise ValueError(f"Failed to upload {file_name} to Google Cloud Storage.")
 
-        data = [("contextName", self.name), ("maxChunkSize", max_chunk_size)]
-
-        if metadata is not None:
-            for meta in metadata:
-                if any(key in meta.keys() for key in ["file_name", "user_id", "file_path", "file_id"]):
-                    msg = '"file_name", "user_id", "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
-                    raise ValueError(msg)
-
-            if len(metadata) != len(file_paths):
-                raise ValueError("Number of metadata entries and files do not match.")
-
-            metadata_json = [("metadataJson", json.dumps(meta)) for meta in metadata]
-
-            data.extend(metadata_json)
-
-        self._client.post(self._urls.context_upload(), data=data, files=files_to_upload)
+            metadata_json = metadata[index] if metadata else {}
+            self._notify_uploaded(file_id, file_name, mime_type, gcs_uri, metadata_json, max_chunk_size)
 
     def upload_from_directory(
         self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 600
@@ -180,10 +204,9 @@ class Context:
         if not files_to_upload:
             raise ValueError("No supported files found")
 
-        metadata = metadata or {}
+        metadata_list = [metadata] * len(files_to_upload) if metadata else None
 
-        for file_path in files_to_upload:
-            self.upload_files([file_path], [metadata], max_chunk_size=max_chunk_size)
+        self.upload_files(files_to_upload, metadata_list)
 
     def search(
         self,

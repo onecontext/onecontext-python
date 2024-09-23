@@ -14,6 +14,7 @@ def context(client: OneContext):
     context_name = "test_context_"
     current_file_name = os.path.splitext(os.path.basename(__file__))[0]
     context_name += "-" + current_file_name
+    client.delete_context(context_name)
     context = client.create_context(context_name)
     yield context
     client.delete_context(context_name)

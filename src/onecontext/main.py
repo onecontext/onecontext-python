@@ -50,7 +50,9 @@ class OneContext:
         self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)
 
-    def create_context(self, name: str) -> Context:
+    def create_context(
+        self, name: str, params={"preprocessor": {"type": "oc"}, "chunker": {"chunk_size_words": 30}}
+    ) -> Context:
         """
         Create a new context with the given name.
 
@@ -66,8 +68,8 @@ class OneContext:
 
         """
         data = {"contextName": name}
-        self._client.post(self._urls.context(), json=data)
-        return Context(name, _client=self._client, _urls=self._urls)
+        resposne = self._client.post(self._urls.context(), json=data)
+        return Context(**resposne, _client=self._client, _urls=self._urls)
 
     def delete_context(self, name: str) -> None:
         self._client.delete(self._urls.context(), json={"contextName": name})
