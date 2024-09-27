@@ -2,6 +2,8 @@ import dataclasses
 import json
 import mimetypes
 import os
+import tempfile
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -12,7 +14,41 @@ import requests
 from onecontext.client import URLS, ApiClient
 from onecontext.models import Chunk, File
 
-SUPPORTED_FILE_TYPES = (".pdf", ".docx")
+SUPPORTED_FILE_TYPES = (
+    ".pdf",
+    ".docx",
+    ".doc",
+    ".docx",
+    ".epub",
+    ".odt",
+    ".pdf",
+    ".ppt",
+    ".pptx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".tiff",
+    ".bmp",
+    ".heic",
+    ".eml",
+    ".html",
+    ".md",
+    ".msg",
+    ".rst",
+    ".rtf",
+    ".txt",
+    ".xml",
+)
+
+
+def guess_mime_type(file_path: Union[str, Path]):
+    _mime_type = mimetypes.guess_type(file_path)
+    mime_type = _mime_type[0] if _mime_type else "application/octet-stream"
+    return mime_type
+
+
+def is_supported_file(file_path: str | Path) -> bool:
+    return Path(file_path).suffix in SUPPORTED_FILE_TYPES
 
 
 def parse_file_path(file_path: str | Path):
@@ -20,11 +56,30 @@ def parse_file_path(file_path: str | Path):
     if not file_path.exists():
         raise ValueError(f"The file at {file_path} does not exist.")
 
-    suffix = file_path.suffix
-    if suffix not in SUPPORTED_FILE_TYPES:
-        msg = f"{suffix} files are not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
+    if not is_supported_file(file_path):
+        msg = f"{file_path} is not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
         raise ValueError(msg)
     return file_path
+
+
+def parse_plain_text_file_name(file_name: str) -> Path:
+    plain_text_extensions = [
+        ".eml",
+        ".html",
+        ".md",
+        ".msg",
+        ".rst",
+        ".rtf",
+        ".txt",
+        ".xml",
+    ]
+
+    file_name_path = Path(file_name)
+    if file_name_path.suffix not in plain_text_extensions:
+        raise ValueError(
+            f"{file_name} is not a valid plain text file_name. Extension must be one of {plain_text_extensions}"
+        )
+    return file_name_path
 
 
 @dataclass
@@ -101,20 +156,6 @@ class Context:
 
         return upload_url, file_id, storage_uri
 
-    def _notify_uploaded(self, file_id, file_name, file_mime_type, gcs_uri, metadata_json, max_chunk_size=600):
-        data = {
-            "fileId": file_id,
-            "fileName": file_name,
-            "fileType": file_mime_type,
-            "gcsUri": gcs_uri,
-            "contextName": self.name,
-            "contextId": self.id,
-            "maxChunkSize": max_chunk_size,
-            "metadataJson": metadata_json,
-        }
-
-        self._client.post(self._urls.context_files_upload_processed(), json=data)
-
     def upload_files(
         self, file_paths: Union[list[str], list[Path]], metadata: Optional[list[dict]] = None, max_chunk_size: int = 600
     ) -> None:
@@ -149,23 +190,98 @@ class Context:
 
         _file_paths = [parse_file_path(path) for path in file_paths]
 
+        files_uploaded = []
+
+        failed = []
+
         for index, file_path in enumerate(_file_paths):
-            _mime_type = mimetypes.guess_type(file_path)
+            try:
+                mime_type = guess_mime_type(file_path)
+                file_name = file_path.name
+                file_content = file_path.read_bytes()
+                upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
 
-            mime_type = _mime_type[0] if _mime_type else "application/octet-stream"
+                # Upload the file to the presigned URL
+                response = requests.put(upload_url, data=file_content, headers={"Content-Type": mime_type})
 
-            file_name = file_path.name
-            file_content = file_path.read_bytes()
+                if response.status_code != 200:
+                    raise ValueError(f"Failed to upload {file_name} to Google Cloud Storage.")
 
-            gcs_upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
-            # Upload the file to the presigned URL
-            response = requests.put(gcs_upload_url, data=file_content, headers={"Content-Type": mime_type})
+                metadata_json = metadata[index] if metadata else {}
 
-            if response.status_code != 200:
-                raise ValueError(f"Failed to upload {file_name} to Google Cloud Storage.")
+                file = {
+                    "fileId": file_id,
+                    "fileName": file_name,
+                    "fileType": mime_type,
+                    "gcsUri": gcs_uri,
+                    "metadataJson": metadata_json,
+                }
 
-            metadata_json = metadata[index] if metadata else {}
-            self._notify_uploaded(file_id, file_name, mime_type, gcs_uri, metadata_json, max_chunk_size)
+                files_uploaded.append(file)
+
+            except Exception:
+                failed.append(file_path)
+
+        if not files_uploaded:
+            raise ValueError("All files failed to upload")
+
+        data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": files_uploaded}
+
+        self._client.post(self._urls.context_files_upload_processed(), json=data)
+
+    def upload_texts(
+        self,
+        contents: list[str],
+        file_names: Optional[list[str]] = None,
+        metadata: Optional[list[dict]] = None,
+        max_chunk_size: int = 200,
+    ) -> None:
+        """
+        Uploads text content as files to the context.
+
+        This method uploads text content specified by `contents` to the context, optionally
+        associating them with file names and metadata. It generates temporary files for the
+        contents, , and then notifies the context about the uploaded file.
+
+        Parameters
+        ----------
+        contents : list[str]
+            The text content to be uploaded.
+
+        file_names : Optional[list[str]], optional
+            The names for the files to be created from `contents`. If not provided, UUIDs
+            will be used as file names with .txt extension.
+
+        metadata : Optional[list[dict]], optional
+            A list of dictionaries containing metadata for each file.
+
+        max_chunk_size : int, optional
+            The maximum size of the resulting chunks in characters
+
+        Raises
+        ------
+        ValueError
+            If the number of file names and contents do not match.
+        """
+
+        if file_names and len(file_names) != len(contents):
+            raise ValueError("Number of file names and contents do not match.")
+
+        if file_names:
+            valid_file_names = [parse_plain_text_file_name(file_name) for file_name in file_names]
+        else:
+            valid_file_names = [Path(f"{uuid.uuid4()}.txt") for _ in contents]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_paths = []
+
+            for content, file_name in zip(contents, valid_file_names):
+                file_path = Path(tmp_dir) / file_name
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+                file_paths.append(file_path)
+
+            self.upload_files(file_paths, metadata, max_chunk_size)
 
     def upload_from_directory(
         self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 600
@@ -199,7 +315,7 @@ class Context:
 
         all_files = [os.path.join(dp, f) for dp, _, filenames in os.walk(directory) for f in filenames]
 
-        files_to_upload = [file for file in all_files if file.endswith(SUPPORTED_FILE_TYPES)]
+        files_to_upload = [file for file in all_files if is_supported_file(file)]
 
         if not files_to_upload:
             raise ValueError("No supported files found")
