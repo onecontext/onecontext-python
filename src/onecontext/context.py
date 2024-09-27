@@ -147,13 +147,12 @@ class Context:
         return files
 
     def _get_upload_url(self, file_name: str):
-        data = {"fileName": file_name, "contextName": self.name, "contextId": self.id}
-        response = self._client.post(self._urls.context_files_upload_url(), json=data)
+        data = {"fileNames": [file_name], "contextName": self.name, "contextId": self.id}
+        upload_params_data = self._client.post(self._urls.context_files_upload_url(), json=data)
 
-        upload_url = response.get("presignedUrl")
-        file_id = response.get("fileId")
-        storage_uri = response.get("gcsUri")
-
+        upload_url = upload_params_data[0].get("presignedUrl")
+        file_id = upload_params_data[0].get("fileId")
+        storage_uri = upload_params_data[0].get("gcsUri")
         return upload_url, file_id, storage_uri
 
     def upload_files(
