@@ -227,14 +227,12 @@ class Context:
         to_upload = list(zip(_file_paths, metadata))
 
         def _upload_path_meta(path_meta: tuple):
-            return self._upload_file(*path_meta)
+            file = self._upload_file(*path_meta)
+            data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": [file]}
+            self._client.post(self._urls.context_files_upload_processed(), json=data)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            results = executor.map(_upload_path_meta, to_upload)
-
-        files_uploaded: List[Dict] = list(results)
-        data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": files_uploaded}
-        self._client.post(self._urls.context_files_upload_processed(), json=data)
+            executor.map(_upload_path_meta, to_upload)
 
     def upload_texts(
         self,
