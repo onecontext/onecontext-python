@@ -242,6 +242,7 @@ class Context:
         file_names: Optional[list[str]] = None,
         metadata: Optional[list[dict]] = None,
         max_chunk_size: int = 200,
+        max_workers: int = 10,
     ) -> None:
         """
         Uploads text content as files to the context.
@@ -264,6 +265,9 @@ class Context:
 
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in characters
+
+        max_workers : int
+            The maximum number of threads to use for uploading files
 
         Raises
         ------
@@ -288,7 +292,7 @@ class Context:
                     f.write(content)
                 file_paths.append(file_path)
 
-            self.upload_files(file_paths, metadata, max_chunk_size)
+            self.upload_files(file_paths, metadata, max_chunk_size, max_workers)
 
     def upload_from_directory(
         self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 600
