@@ -147,7 +147,7 @@ class Context:
         return files
 
     def _get_upload_url(self, file_name: str):
-        data = {"fileNames": [file_name], "contextName": self.name, "contextId": self.id}
+        data = {"fileNames": [file_name], "contextName": self.name}
         upload_params_data = self._client.post(self._urls.context_files_upload_url(), json=data)
 
         upload_url = upload_params_data[0].get("presignedUrl")
@@ -191,38 +191,29 @@ class Context:
 
         files_uploaded = []
 
-        failed = []
-
         for index, file_path in enumerate(_file_paths):
-            try:
-                mime_type = guess_mime_type(file_path)
-                file_name = file_path.name
-                file_content = file_path.read_bytes()
-                upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
+            mime_type = guess_mime_type(file_path)
+            file_name = file_path.name
+            file_content = file_path.read_bytes()
+            upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
 
-                # Upload the file to the presigned URL
-                response = requests.put(upload_url, data=file_content, headers={"Content-Type": mime_type})
+            # Upload the file to the presigned URL
+            response = requests.put(upload_url, data=file_content, headers={"Content-Type": mime_type})
 
-                if response.status_code != 200:
-                    raise ValueError(f"Failed to upload {file_name} to Google Cloud Storage.")
+            if response.status_code != 200:
+                raise ValueError(f"Failed to upload {file_name} to Google Cloud Storage.")
 
-                metadata_json = metadata[index] if metadata else {}
+            metadata_json = metadata[index] if metadata else {}
 
-                file = {
-                    "fileId": file_id,
-                    "fileName": file_name,
-                    "fileType": mime_type,
-                    "gcsUri": gcs_uri,
-                    "metadataJson": metadata_json,
-                }
+            file = {
+                "fileId": file_id,
+                "fileName": file_name,
+                "fileType": mime_type,
+                "gcsUri": gcs_uri,
+                "metadataJson": metadata_json,
+            }
 
-                files_uploaded.append(file)
-
-            except Exception:
-                failed.append(file_path)
-
-        if not files_uploaded:
-            raise ValueError("All files failed to upload")
+            files_uploaded.append(file)
 
         data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": files_uploaded}
 
