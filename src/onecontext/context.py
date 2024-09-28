@@ -4,6 +4,7 @@ import mimetypes
 import os
 import tempfile
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -155,8 +156,36 @@ class Context:
         storage_uri = upload_params_data[0].get("gcsUri")
         return upload_url, file_id, storage_uri
 
+    def _upload_file(self, file_path: Path, metadata: Optional[dict] = None):
+        mime_type = guess_mime_type(file_path)
+        file_name = file_path.name
+        file_content = file_path.read_bytes()
+
+        upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
+
+        # Upload the file to the presigned URL
+        response = requests.put(upload_url, data=file_content, headers={"Content-Type": mime_type})
+
+        if response.status_code != 200:
+            raise ValueError(f"Failed to upload {file_name} to OneContext Storage.")
+
+        metadata = metadata if metadata else {}
+
+        file = {
+            "fileId": file_id,
+            "fileName": file_name,
+            "fileType": mime_type,
+            "gcsUri": gcs_uri,
+            "metadataJson": metadata,
+        }
+        return file
+
     def upload_files(
-        self, file_paths: Union[list[str], list[Path]], metadata: Optional[list[dict]] = None, max_chunk_size: int = 600
+        self,
+        file_paths: Union[list[str], list[Path]],
+        metadata: Optional[list[dict]] = None,
+        max_chunk_size: int = 600,
+        max_workers: int = 10,
     ) -> None:
         """
         Uploads files to the context using presigned URLs.
@@ -178,45 +207,33 @@ class Context:
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in words
 
+        max_workers : int
+            The maximum number of threads to use for uploading files
+
         Raises
         ------
         ValueError
             If any reserved keys are present in the metadata.
             If the file type is not supported (not in SUPPORTED_FILE_TYPES).
         """
+        _file_paths = [parse_file_path(path) for path in file_paths]
+
         if metadata and len(metadata) != len(file_paths):
             raise ValueError("Number of metadata entries and files do not match.")
 
-        _file_paths = [parse_file_path(path) for path in file_paths]
+        if not metadata:
+            metadata = [{} for _ in _file_paths]
 
-        files_uploaded = []
+        to_upload = list(zip(_file_paths, metadata))
 
-        for index, file_path in enumerate(_file_paths):
-            mime_type = guess_mime_type(file_path)
-            file_name = file_path.name
-            file_content = file_path.read_bytes()
-            upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
+        def _upload_path_meta(path_meta: tuple):
+            return self._upload_file(*path_meta)
 
-            # Upload the file to the presigned URL
-            response = requests.put(upload_url, data=file_content, headers={"Content-Type": mime_type})
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            results = executor.map(_upload_path_meta, to_upload)
 
-            if response.status_code != 200:
-                raise ValueError(f"Failed to upload {file_name} to Google Cloud Storage.")
-
-            metadata_json = metadata[index] if metadata else {}
-
-            file = {
-                "fileId": file_id,
-                "fileName": file_name,
-                "fileType": mime_type,
-                "gcsUri": gcs_uri,
-                "metadataJson": metadata_json,
-            }
-
-            files_uploaded.append(file)
-
+        files_uploaded: List[Dict] = list(results)
         data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": files_uploaded}
-
         self._client.post(self._urls.context_files_upload_processed(), json=data)
 
     def upload_texts(
