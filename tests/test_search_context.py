@@ -46,6 +46,14 @@ def test_list_chunks(context_with_files: Context):
         assert chunk.metadata_json
         assert chunk.metadata_json.get("file_tag") == "file_1"
 
+    metadata_filters = {"file_tag": {"$eq": "file_1"}}
+
+    chunks_metadata_filtered = context_with_files.list_chunks(metadata_filters=metadata_filters, limit=100)
+
+    for chunk in chunks_metadata_filtered:
+        assert chunk.metadata_json
+        assert chunk.metadata_json.get("file_tag") == "file_1"
+
 
 @pytest.mark.parametrize(
     "query, metadata_filters, expected_count",
