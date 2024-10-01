@@ -63,6 +63,15 @@ def parse_file_path(file_path: str | Path):
     return file_path
 
 
+def parse_metadata(metadata: Dict):
+    # Check if the dictionary is JSON serializable
+    try:
+        json.dumps(metadata)
+    except (TypeError, OverflowError) as error:
+        raise ValueError("The provided metadata is not JSON serializable") from error
+    return metadata
+
+
 def parse_plain_text_file_name(file_name: str) -> Path:
     plain_text_extensions = [
         ".eml",
@@ -223,6 +232,8 @@ class Context:
 
         if not metadata:
             metadata = [{} for _ in _file_paths]
+
+        metadata = [parse_metadata(m) for m in metadata]
 
         to_upload = list(zip(_file_paths, metadata))
 
