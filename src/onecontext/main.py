@@ -45,7 +45,7 @@ class OneContext:
         if base_url is None:
             base_url = os.environ.get("ONECONTEXT_BASE_URL")
 
-        base_url = base_url or "https://app.onecontext.ai/api/v3/"
+        base_url = base_url or "https://app.onecontext.ai/api/v4/"
 
         self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)
