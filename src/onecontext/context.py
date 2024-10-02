@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import requests
+from tqdm import tqdm
 
 from onecontext.client import URLS, ApiClient
 from onecontext.models import Chunk, File
@@ -195,9 +196,10 @@ class Context:
         metadata: Optional[list[dict]] = None,
         max_chunk_size: int = 600,
         max_workers: int = 10,
+        verbose: Optional[bool] = None,
     ) -> None:
         """
-        Uploads files to the context using presigned URLs.
+        Uploads files to the context using presigned URLs.contex
 
         This method uploads files specified by `file_paths` to the context, optionally
         associating them with metadata. It retrieves a presigned URL for each file,
@@ -218,6 +220,9 @@ class Context:
 
         max_workers : int
             The maximum number of threads to use for uploading files
+
+        verbose : Optional[bool]
+            Display tqdm progress bar
 
         Raises
         ------
@@ -242,8 +247,10 @@ class Context:
             data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": [file]}
             self._client.post(self._urls.context_files_upload_processed(), json=data)
 
+        disable = not verbose if verbose is not None else None
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            executor.map(_upload_path_meta, to_upload)
+            list(tqdm(executor.map(_upload_path_meta, to_upload), total=len(to_upload), disable=disable))
 
     def upload_texts(
         self,

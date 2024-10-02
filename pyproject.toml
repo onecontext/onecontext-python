@@ -33,7 +33,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["requests"]
+dependencies = ["requests", "tqdm"]
 
 [project.urls]
 Documentation = "https://github.com/onecontext/onecontext-python#readme"
