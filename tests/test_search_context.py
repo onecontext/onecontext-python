@@ -10,7 +10,7 @@ from onecontext.main import OneContext
 
 @pytest.fixture
 def context(client: OneContext):
-    context_name = f"text_context_{__name__}"
+    context_name = f"test_context_{__name__}"
 
     try:
         context = client.create_context(context_name)
@@ -18,8 +18,6 @@ def context(client: OneContext):
 
     finally:
         client.delete_context(context_name)
-
-    # client.delete_context(context_name)
 
 
 @pytest.fixture
