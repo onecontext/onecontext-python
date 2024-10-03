@@ -11,6 +11,7 @@ class OneContext:
         self,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
+        open_ai_key: Optional[str] = None,
         extra_headers: Optional[Dict[str, Any]] = None,
     ):
         """
@@ -22,6 +23,10 @@ class OneContext:
             The API key for authenticating requests to the OneContext API.
             If not provided, the environment variable 'ONECONTEXT_API_KEY'
             will be used. Defaults to None.
+
+        open_api_key : Optional[str], optional
+            The OPEN AI API key for authenticating requests to the OPEN AI.
+
         base_url : str, optional
             The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v4/".
             Can be overridden with the environment variable 'ONECONTEXT_API_KEY'
@@ -45,8 +50,12 @@ class OneContext:
         if base_url is None:
             base_url = os.environ.get("ONECONTEXT_BASE_URL")
 
-        base_url = base_url or "https://app.onecontext.ai/api/v4/"
+        extra_headers = extra_headers or {}
 
+        if open_ai_key:
+            extra_headers.update({"OPENAI-API-KEY": open_ai_key})
+
+        base_url = base_url or "https://app.onecontext.ai/api/v4/"
         self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)
 
