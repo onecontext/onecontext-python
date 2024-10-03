@@ -75,14 +75,28 @@ def flatten_dict(dict_: dict, parent_key: str = "", sep: str = "_") -> dict:
     return dict(items)
 
 
-def parse_metadata(metadata: Dict):
+def check_keys(dictionary):
+    bad_chars = [".", "-", "\\"]
+    for key, value in dictionary.items():
+        if any(char in key for char in bad_chars):
+            raise ValueError(f"Key '{key}' contains invalid character(s): {bad_chars}")
+        if isinstance(value, dict):
+            check_keys(value)
+
+
+def parse_metadata(metadata: Dict, flatten: bool = False):
     # Check if the dictionary is JSON serializable
+
     try:
         json.dumps(metadata)
     except (TypeError, OverflowError) as error:
         raise ValueError("The provided metadata is not JSON serializable") from error
 
-    return flatten_dict(metadata)
+    check_keys(metadata)
+
+    if flatten:
+        return flatten_dict(metadata)
+    return metadata
 
 
 def parse_plain_text_file_name(file_name: str) -> Path:
@@ -207,6 +221,7 @@ class Context:
         file_paths: Union[list[str], list[Path]],
         metadata: Optional[list[dict]] = None,
         max_chunk_size: int = 200,
+        flatten_metadata: bool = False,
         max_workers: int = 10,
         verbose: Optional[bool] = None,
     ) -> None:
@@ -230,11 +245,19 @@ class Context:
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in words
 
+        flatten_metadata: bool
+            Wether to flatten metadata dicts with a "_" seperator
+            ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
+            Note metadata filters only work for top level keys, use this option
+            to make all metadata queryable
+
         max_workers : int
             The maximum number of threads to use for uploading files
 
+
         verbose : Optional[bool]
             Display tqdm progress bar
+
 
         Raises
         ------
@@ -250,7 +273,7 @@ class Context:
         if not metadata:
             metadata = [{} for _ in _file_paths]
 
-        metadata = [parse_metadata(m) for m in metadata]
+        metadata = [parse_metadata(m, flatten_metadata) for m in metadata]
 
         to_upload = list(zip(_file_paths, metadata))
 
@@ -270,6 +293,7 @@ class Context:
         file_names: Optional[list[str]] = None,
         metadata: Optional[list[dict]] = None,
         max_chunk_size: int = 200,
+        flatten_metadata: bool = False,
         max_workers: int = 10,
     ) -> None:
         """
@@ -293,6 +317,12 @@ class Context:
 
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in characters
+
+        flatten_metadata: bool
+            Wether to flatten metadata dicts with a "_" seperator
+            ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
+            Note metadata filters only work for top level keys, use this option
+            to make all metadata queryable
 
         max_workers : int
             The maximum number of threads to use for uploading files
@@ -320,10 +350,21 @@ class Context:
                     f.write(content)
                 file_paths.append(file_path)
 
-            self.upload_files(file_paths, metadata, max_chunk_size, max_workers)
+            self.upload_files(
+                file_paths=file_paths,
+                metadata=metadata,
+                max_chunk_size=max_chunk_size,
+                flatten_metadata=flatten_metadata,
+                max_workers=max_workers,
+            )
 
     def upload_from_directory(
-        self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 200
+        self,
+        directory: Union[str, Path],
+        metadata: Optional[dict] = None,
+        max_chunk_size: int = 200,
+        flatten_metadata: bool = False,
+        max_workers: int = 10,
     ) -> None:
         """
         Uploads files from a given directory to a context.
@@ -339,6 +380,17 @@ class Context:
             Metadata associated with the files to be uploaded.
             Note, the same metadata will be associated with every file in the directory
 
+        max_chunk_size : int, optional
+            The maximum size of the resulting chunks in characters
+
+        flatten_metadata: bool
+            Wether to flatten metadata dicts with a "_" seperator
+            ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
+            Note metadata filters only work for top level keys, use this option
+            to make all metadata queryable
+
+        max_workers : int
+            The maximum number of threads to use for uploading files
         Raises
         ------
         ValueError
@@ -361,7 +413,12 @@ class Context:
 
         metadata_list = [metadata] * len(files_to_upload) if metadata else None
 
-        self.upload_files(files_to_upload, metadata_list)
+        self.upload_files(
+            file_paths=files_to_upload,
+            metadata=metadata_list,
+            flatten_metadata=flatten_metadata,
+            max_workers=max_workers,
+        )
 
     def search(
         self,
