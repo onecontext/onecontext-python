@@ -2,15 +2,121 @@ import dataclasses
 import json
 import mimetypes
 import os
+import tempfile
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import requests
+from tqdm import tqdm
+
 from onecontext.client import URLS, ApiClient
 from onecontext.models import Chunk, File
 
-SUPPORTED_FILE_TYPES = (".pdf", ".docx")
+SUPPORTED_FILE_TYPES = (
+    ".pdf",
+    ".docx",
+    ".doc",
+    ".docx",
+    ".epub",
+    ".odt",
+    ".pdf",
+    ".ppt",
+    ".pptx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".tiff",
+    ".bmp",
+    ".heic",
+    ".eml",
+    ".html",
+    ".md",
+    ".msg",
+    ".rst",
+    ".rtf",
+    ".txt",
+    ".xml",
+)
+
+
+def guess_mime_type(file_path: Union[str, Path]):
+    _mime_type = mimetypes.guess_type(file_path)
+    mime_type = _mime_type[0] if _mime_type else "application/octet-stream"
+    return mime_type
+
+
+def is_supported_file(file_path: str | Path) -> bool:
+    return Path(file_path).suffix in SUPPORTED_FILE_TYPES
+
+
+def parse_file_path(file_path: str | Path):
+    file_path = Path(file_path)
+    if not file_path.exists():
+        raise ValueError(f"The file at {file_path} does not exist.")
+
+    if not is_supported_file(file_path):
+        msg = f"{file_path} is not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
+        raise ValueError(msg)
+    return file_path
+
+
+def flatten_dict(dict_: dict, parent_key: str = "", sep: str = "_") -> dict:
+    items = []
+    for k, v in dict_.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
+def check_keys(dictionary):
+    bad_chars = [".", "-", "\\"]
+    for key, value in dictionary.items():
+        if any(char in key for char in bad_chars):
+            raise ValueError(f"Key '{key}' contains invalid character(s): {bad_chars}")
+        if isinstance(value, dict):
+            check_keys(value)
+
+
+def parse_metadata(metadata: Dict, flatten: bool = False):
+    # Check if the dictionary is JSON serializable
+
+    try:
+        json.dumps(metadata)
+    except (TypeError, OverflowError) as error:
+        raise ValueError("The provided metadata is not JSON serializable") from error
+
+    check_keys(metadata)
+
+    if flatten:
+        return flatten_dict(metadata)
+    return metadata
+
+
+def parse_plain_text_file_name(file_name: str) -> Path:
+    plain_text_extensions = [
+        ".eml",
+        ".html",
+        ".md",
+        ".msg",
+        ".rst",
+        ".rtf",
+        ".txt",
+        ".xml",
+    ]
+
+    file_name_path = Path(file_name)
+    if file_name_path.suffix not in plain_text_extensions:
+        raise ValueError(
+            f"{file_name} is not a valid plain text file_name. Extension must be one of {plain_text_extensions}"
+        )
+    return file_name_path
 
 
 @dataclass
@@ -77,19 +183,60 @@ class Context:
 
         return files
 
+    def _get_upload_url(self, file_name: str):
+        data = {"fileNames": [file_name], "contextName": self.name}
+        upload_params_data = self._client.post(self._urls.context_files_upload_url(), json=data)
+
+        upload_url = upload_params_data[0].get("presignedUrl")
+        file_id = upload_params_data[0].get("fileId")
+        storage_uri = upload_params_data[0].get("gcsUri")
+        return upload_url, file_id, storage_uri
+
+    def _upload_file(self, file_path: Path, metadata: Optional[dict] = None):
+        mime_type = guess_mime_type(file_path)
+        file_name = file_path.name
+        file_content = file_path.read_bytes()
+
+        upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
+
+        # Upload the file to the presigned URL
+        response = requests.put(upload_url, data=file_content, headers={"Content-Type": mime_type})
+
+        if response.status_code != 200:
+            raise ValueError(f"Failed to upload {file_name} to OneContext Storage.")
+
+        metadata = metadata if metadata else {}
+
+        file = {
+            "fileId": file_id,
+            "fileName": file_name,
+            "fileType": mime_type,
+            "gcsUri": gcs_uri,
+            "metadataJson": metadata,
+        }
+        return file
+
     def upload_files(
-        self, file_paths: Union[list[str], list[Path]], metadata: Optional[list[dict]] = None, max_chunk_size: int = 600
+        self,
+        file_paths: Union[list[str], list[Path]],
+        metadata: Optional[list[dict]] = None,
+        max_chunk_size: int = 200,
+        flatten_metadata: bool = False,
+        max_workers: int = 10,
+        verbose: Optional[bool] = None,
     ) -> None:
         """
-        Uploads a file to the context.
+        Uploads files to the context.
 
-        This method uploads a file specified by `file_path` to the context, optionally
-        associating it with metadata.
+        This method uploads files specified by `file_paths` to the context, optionally
+        associating them with metadata. It retrieves a presigned URL for each file,
+        uploads the file to the presigned URL, and then notifies the context about the
+        uploaded file.
 
         Parameters
         ----------
         file_paths : Union[str, Path]
-            The paths to the files to be uploaded. Can be a strings or a Path objects.
+            The paths to the files to be uploaded. Can be strings or Path objects.
 
         metadata : Optional[list[dict]], optional
             A list of dictionaries containing metadata for each file. The keys "file_name",
@@ -98,53 +245,126 @@ class Context:
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in words
 
+        flatten_metadata: bool
+            Whether to flatten metadata dicts with a "_" separator
+            ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
+            Note metadata filters only work for top level keys, use this option
+            to make all metadata queryable
+
+        max_workers : int
+            The maximum number of threads to use for uploading files
+
+
+        verbose : Optional[bool]
+            Display tqdm progress bar
+
 
         Raises
         ------
         ValueError
             If any reserved keys are present in the metadata.
             If the file type is not supported (not in SUPPORTED_FILE_TYPES).
-
         """
-        files_to_upload = []
+        _file_paths = [parse_file_path(path) for path in file_paths]
 
-        for _file_path in file_paths:
-            file_path = Path(_file_path)
+        if metadata and len(metadata) != len(file_paths):
+            raise ValueError("Number of metadata entries and files do not match.")
 
-            if not file_path.exists():
-                raise ValueError(f"The file at {file_path} does not exist.")
+        if not metadata:
+            metadata = [{} for _ in _file_paths]
 
-            suffix = file_path.suffix
+        metadata = [parse_metadata(m, flatten_metadata) for m in metadata]
 
-            if suffix not in SUPPORTED_FILE_TYPES:
-                msg = f"{suffix} files are not supported. Supported file types: {SUPPORTED_FILE_TYPES}"
-                raise ValueError(msg)
+        to_upload = list(zip(_file_paths, metadata))
 
-            file_path = file_path.expanduser().resolve()
+        def _upload_path_meta(path_meta: tuple):
+            file = self._upload_file(*path_meta)
+            data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": [file]}
+            self._client.post(self._urls.context_files_upload_processed(), json=data)
 
-            mime_type, _ = mimetypes.guess_type(file_path)
-            mime_type = mime_type or "application/octet-stream"
-            files_to_upload.append(("files", (file_path.name, file_path.read_bytes(), mime_type)))
+        disable = not verbose if verbose is not None else None
 
-        data = [("contextName", self.name), ("maxChunkSize", max_chunk_size)]
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            list(tqdm(executor.map(_upload_path_meta, to_upload), total=len(to_upload), disable=disable))
 
-        if metadata is not None:
-            for meta in metadata:
-                if any(key in meta.keys() for key in ["file_name", "user_id", "file_path", "file_id"]):
-                    msg = '"file_name", "user_id", "file_path", and "file_id" are reserved keys in metadata. Please try another key value!'
-                    raise ValueError(msg)
+    def upload_texts(
+        self,
+        contents: list[str],
+        file_names: Optional[list[str]] = None,
+        metadata: Optional[list[dict]] = None,
+        max_chunk_size: int = 200,
+        flatten_metadata: bool = False,
+        max_workers: int = 10,
+    ) -> None:
+        """
+        Uploads text content as files to the context.
 
-            if len(metadata) != len(file_paths):
-                raise ValueError("Number of metadata entries and files do not match.")
+        This method uploads text content specified by `contents` to the context, optionally
+        associating them with file names and metadata. It generates temporary files for the
+        contents, , and then notifies the context about the uploaded file.
 
-            metadata_json = [("metadataJson", json.dumps(meta)) for meta in metadata]
+        Parameters
+        ----------
+        contents : list[str]
+            The text content to be uploaded.
 
-            data.extend(metadata_json)
+        file_names : Optional[list[str]], optional
+            The names for the files to be created from `contents`. If not provided, UUIDs
+            will be used as file names with .txt extension.
 
-        self._client.post(self._urls.context_upload(), data=data, files=files_to_upload)
+        metadata : Optional[list[dict]], optional
+            A list of dictionaries containing metadata for each file.
+
+        max_chunk_size : int, optional
+            The maximum size of the resulting chunks in characters
+
+        flatten_metadata: bool
+            Whether to flatten metadata dicts with a "_" separator
+            ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
+            Note metadata filters only work for top level keys, use this option
+            to make all metadata queryable
+
+        max_workers : int
+            The maximum number of threads to use for uploading files
+
+        Raises
+        ------
+        ValueError
+            If the number of file names and contents do not match.
+        """
+
+        if file_names and len(file_names) != len(contents):
+            raise ValueError("Number of file names and contents do not match.")
+
+        if file_names:
+            valid_file_names = [parse_plain_text_file_name(file_name) for file_name in file_names]
+        else:
+            valid_file_names = [Path(f"{uuid.uuid4()}.txt") for _ in contents]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_paths = []
+
+            for content, file_name in zip(contents, valid_file_names):
+                file_path = Path(tmp_dir) / file_name
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+                file_paths.append(file_path)
+
+            self.upload_files(
+                file_paths=file_paths,
+                metadata=metadata,
+                max_chunk_size=max_chunk_size,
+                flatten_metadata=flatten_metadata,
+                max_workers=max_workers,
+            )
 
     def upload_from_directory(
-        self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 600
+        self,
+        directory: Union[str, Path],
+        metadata: Optional[dict] = None,
+        max_chunk_size: int = 200,
+        flatten_metadata: bool = False,
+        max_workers: int = 10,
     ) -> None:
         """
         Uploads files from a given directory to a context.
@@ -160,6 +380,17 @@ class Context:
             Metadata associated with the files to be uploaded.
             Note, the same metadata will be associated with every file in the directory
 
+        max_chunk_size : int, optional
+            The maximum size of the resulting chunks in characters
+
+        flatten_metadata: bool
+            Whether to flatten metadata dicts with a "_" separator
+            ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
+            Note metadata filters only work for top level keys, use this option
+            to make all metadata queryable
+
+        max_workers : int
+            The maximum number of threads to use for uploading files
         Raises
         ------
         ValueError
@@ -175,15 +406,19 @@ class Context:
 
         all_files = [os.path.join(dp, f) for dp, _, filenames in os.walk(directory) for f in filenames]
 
-        files_to_upload = [file for file in all_files if file.endswith(SUPPORTED_FILE_TYPES)]
+        files_to_upload = [file for file in all_files if is_supported_file(file)]
 
         if not files_to_upload:
             raise ValueError("No supported files found")
 
-        metadata = metadata or {}
+        metadata_list = [metadata] * len(files_to_upload) if metadata else None
 
-        for file_path in files_to_upload:
-            self.upload_files([file_path], [metadata], max_chunk_size=max_chunk_size)
+        self.upload_files(
+            file_paths=files_to_upload,
+            metadata=metadata_list,
+            flatten_metadata=flatten_metadata,
+            max_workers=max_workers,
+        )
 
     def search(
         self,

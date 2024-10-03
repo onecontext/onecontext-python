@@ -64,6 +64,11 @@ on the pro plan, you can have up to 5,000 contexts, each with up to 5,000 files.
 ```python
 context.upload_files(['path_to_file_1.pdf', 'path_to_file_2.pdf'], max_chunk_size=400)
 ```
+#### To upload strings directly use the upload_texts method
+
+```python
+context.upload_texts(['Hi Bob!', 'Oh hey Mark!'])
+```
 
 #### You can also add a full directory of files
 
@@ -184,6 +189,7 @@ The comparator operators you can use are:
 | Key          | Value Description                                                                   | Supplied Value Type | Returned Value Type          |
 |--------------|-------------------------------------------------------------------------------------|---------------------|------------------------------|
 | `$eq`        | Returns True if the value returned from the DB is equal to the supplied value.      | `string             | int | float`       | `string | int | float`       |
+| `$neq`        | Returns True if the value returned from the DB is not equal to the supplied value.      | `string             | int | float`       | `string | int | float`       |
 | `$gt`        | Returns True if the value returned from the DB is greater than the supplied value.  | `int                | float`                | `int | float`                |
 | `$lt`        | Returns True if the value returned from the DB is less than the supplied value.     | `int                | float`                | `int | float`                |
 | `$in`        | Returns True if the value returned from the DB is contained by the supplied array.  | `array<string>`      | int | float>`| `string | int | float`       |
