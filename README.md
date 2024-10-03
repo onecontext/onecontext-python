@@ -64,6 +64,11 @@ on the pro plan, you can have up to 5,000 contexts, each with up to 5,000 files.
 ```python
 context.upload_files(['path_to_file_1.pdf', 'path_to_file_2.pdf'], max_chunk_size=400)
 ```
+#### To upload strings directly use the upload_texts method
+
+```python
+context.upload_texts(['Hi Bob!', 'Oh hi Mark!'])
+```
 
 #### You can also add a full directory of files
 
