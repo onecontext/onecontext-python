@@ -184,6 +184,7 @@ The comparator operators you can use are:
 | Key          | Value Description                                                                   | Supplied Value Type | Returned Value Type          |
 |--------------|-------------------------------------------------------------------------------------|---------------------|------------------------------|
 | `$eq`        | Returns True if the value returned from the DB is equal to the supplied value.      | `string             | int | float`       | `string | int | float`       |
+| `$neq`        | Returns True if the value returned from the DB is not equal to the supplied value.      | `string             | int | float`       | `string | int | float`       |
 | `$gt`        | Returns True if the value returned from the DB is greater than the supplied value.  | `int                | float`                | `int | float`                |
 | `$lt`        | Returns True if the value returned from the DB is less than the supplied value.     | `int                | float`                | `int | float`                |
 | `$in`        | Returns True if the value returned from the DB is contained by the supplied array.  | `array<string>`      | int | float>`| `string | int | float`       |
