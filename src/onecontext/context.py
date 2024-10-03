@@ -206,7 +206,7 @@ class Context:
         self,
         file_paths: Union[list[str], list[Path]],
         metadata: Optional[list[dict]] = None,
-        max_chunk_size: int = 600,
+        max_chunk_size: int = 200,
         max_workers: int = 10,
         verbose: Optional[bool] = None,
     ) -> None:
@@ -323,7 +323,7 @@ class Context:
             self.upload_files(file_paths, metadata, max_chunk_size, max_workers)
 
     def upload_from_directory(
-        self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 600
+        self, directory: Union[str, Path], metadata: Optional[dict] = None, max_chunk_size: int = 200
     ) -> None:
         """
         Uploads files from a given directory to a context.

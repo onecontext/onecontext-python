@@ -23,7 +23,7 @@ class OneContext:
             If not provided, the environment variable 'ONECONTEXT_API_KEY'
             will be used. Defaults to None.
         base_url : str, optional
-            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v3/".
+            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v4/".
             Can be overridden with the environment variable 'ONECONTEXT_API_KEY'
 
         Raises
