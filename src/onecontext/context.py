@@ -226,7 +226,7 @@ class Context:
         verbose: Optional[bool] = None,
     ) -> None:
         """
-        Uploads files to the context using presigned URLs.contex
+        Uploads files to the context.
 
         This method uploads files specified by `file_paths` to the context, optionally
         associating them with metadata. It retrieves a presigned URL for each file,
@@ -246,7 +246,7 @@ class Context:
             The maximum size of the resulting chunks in words
 
         flatten_metadata: bool
-            Wether to flatten metadata dicts with a "_" seperator
+            Whether to flatten metadata dicts with a "_" separator
             ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
             Note metadata filters only work for top level keys, use this option
             to make all metadata queryable
@@ -319,7 +319,7 @@ class Context:
             The maximum size of the resulting chunks in characters
 
         flatten_metadata: bool
-            Wether to flatten metadata dicts with a "_" seperator
+            Whether to flatten metadata dicts with a "_" separator
             ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
             Note metadata filters only work for top level keys, use this option
             to make all metadata queryable
@@ -384,7 +384,7 @@ class Context:
             The maximum size of the resulting chunks in characters
 
         flatten_metadata: bool
-            Wether to flatten metadata dicts with a "_" seperator
+            Whether to flatten metadata dicts with a "_" separator
             ie. {"key" : {"nestedkey": "value"}} => {"key_nestedkey" : "value"}}
             Note metadata filters only work for top level keys, use this option
             to make all metadata queryable

@@ -67,7 +67,7 @@ context.upload_files(['path_to_file_1.pdf', 'path_to_file_2.pdf'], max_chunk_siz
 #### To upload strings directly use the upload_texts method
 
 ```python
-context.upload_texts(['Hi Bob!', 'Oh hi Mark!'])
+context.upload_texts(['Hi Bob!', 'Oh hey Mark!'])
 ```
 
 #### You can also add a full directory of files
