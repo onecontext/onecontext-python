@@ -64,13 +64,25 @@ def parse_file_path(file_path: str | Path):
     return file_path
 
 
+def flatten_dict(dict_: dict, parent_key: str = "", sep: str = "_") -> dict:
+    items = []
+    for k, v in dict_.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
 def parse_metadata(metadata: Dict):
     # Check if the dictionary is JSON serializable
     try:
         json.dumps(metadata)
     except (TypeError, OverflowError) as error:
         raise ValueError("The provided metadata is not JSON serializable") from error
-    return metadata
+
+    return flatten_dict(metadata)
 
 
 def parse_plain_text_file_name(file_name: str) -> Path:
