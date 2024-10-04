@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from utils import wait_for_file_processing
+from helpers.utils import wait_for_file_processing
 
 from onecontext.client import ApiError
 from onecontext.context import Context

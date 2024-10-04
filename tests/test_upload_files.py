@@ -3,20 +3,21 @@ import tempfile
 
 import pytest
 import requests
-from utils import wait_for_file_processing
+from helpers.utils import wait_for_file_processing
 
 from onecontext.context import Context
 from onecontext.main import OneContext
 
 
-@pytest.fixture(scope="function")
-def context(client: OneContext, request):
-    context_name = f"test_context_{request.node.name}"
-    print(context_name)
-    client.delete_context(context_name)
-    context = client.create_context(context_name)
-    yield context
-    client.delete_context(context_name)
+@pytest.fixture
+def context(client: OneContext):
+    context_name = f"test_context_{__name__}"
+    try:
+        context = client.create_context(context_name)
+        yield context
+
+    finally:
+        client.delete_context(context_name)
 
 
 def download_file(file_url, local_path):
