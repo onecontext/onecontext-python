@@ -562,7 +562,6 @@ class Context:
             data.update({"fileId": file_id})
 
         out = self._client.post(self._urls.context_chunks(), json=data)
-        print("out in get chunks", out)
         chunk_dicts = out["chunks"]
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return chunks

@@ -7,8 +7,6 @@ from onecontext.main import OneContext
 from dotenv import load_dotenv
 load_dotenv()
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
-
 @pytest.fixture
 def api_key():
     return os.getenv("ONECONTEXT_API_KEY")
