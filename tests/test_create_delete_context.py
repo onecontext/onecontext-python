@@ -4,7 +4,6 @@ import pytest
 
 from onecontext.main import OneContext
 
-
 def test_create_delete_context(client: OneContext):
     context_name = "test_context"
     client.create_context(context_name)

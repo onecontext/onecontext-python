@@ -500,7 +500,7 @@ class Context:
 
     def _post_query(self, params: Dict[str, Any]) -> List[Chunk]:
         results = self._client.post(self._urls.context_search(), json=params)
-        return [Chunk(**chunk) for chunk in results]
+        return [Chunk(**chunk) for chunk in results["chunks"]]
 
     def delete_file(self, file_id: str) -> None:
         data = {"fileId": file_id}
@@ -562,6 +562,7 @@ class Context:
             data.update({"fileId": file_id})
 
         out = self._client.post(self._urls.context_chunks(), json=data)
+        print("out in get chunks", out)
         chunk_dicts = out["chunks"]
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return chunks
