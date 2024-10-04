@@ -1,8 +1,6 @@
 import os
 import sys
-
 import pytest
-
 from onecontext.main import OneContext
 
 # import all the env variables in .env and add them to the environment
