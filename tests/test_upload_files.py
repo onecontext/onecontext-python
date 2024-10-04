@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 import requests
-from utils import wait_for_file_processing
+from helpers.utils import wait_for_file_processing
 
 from onecontext.context import Context
 from onecontext.main import OneContext

@@ -76,6 +76,7 @@ class OneContext:
         """
         data = {"contextName": name}
         response = self._client.post(self._urls.context(), json=data)
+        print("Response: ",response)
         return Context(**response, _client=self._client, _urls=self._urls)
 
     def delete_context(self, name: str) -> None:

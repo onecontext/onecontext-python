@@ -5,8 +5,11 @@ import pytest
 
 from onecontext.main import OneContext
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
+# import all the env variables in .env and add them to the environment
+from dotenv import load_dotenv
+load_dotenv()
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 @pytest.fixture
 def api_key():

@@ -489,12 +489,14 @@ class Context:
             "topK": top_k,
             "includeEmbedding": include_embedding,
             "contextName": self.name,
+            "structuredOutput": None
         }
 
         if metadata_filters is not None:
             params.update({"metadataFilters": metadata_filters})
 
         return self._post_query(params)
+        
 
     def _post_query(self, params: Dict[str, Any]) -> List[Chunk]:
         results = self._client.post(self._urls.context_search(), json=params)
@@ -559,6 +561,7 @@ class Context:
         if file_id is not None:
             data.update({"fileId": file_id})
 
-        chunk_dicts = self._client.post(self._urls.context_chunks(), json=data)
+        out = self._client.post(self._urls.context_chunks(), json=data)
+        chunk_dicts = out["chunks"]
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return chunks
