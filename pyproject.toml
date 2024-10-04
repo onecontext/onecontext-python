@@ -49,6 +49,7 @@ dependencies = [
     "pytest",
     "pytest-xdist",
     "ptpython",
+    "python-dotenv",
     "IPython",
     "pudb",
     "jupyter",

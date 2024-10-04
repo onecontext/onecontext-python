@@ -4,7 +4,8 @@ import sys
 import pytest
 
 from onecontext.main import OneContext
-
+from dotenv import load_dotenv
+load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 
@@ -15,7 +16,7 @@ def api_key():
 
 @pytest.fixture
 def base_url():
-    return os.getenv("ONECONTEXT_BASE_URL", "https://app.onecontext.ai/api/v3/")
+    return os.getenv("ONECONTEXT_BASE_URL", "https://app.onecontext.ai/api/v4/")
 
 
 @pytest.fixture
