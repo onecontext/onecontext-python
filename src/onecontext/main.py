@@ -28,7 +28,7 @@ class OneContext:
             The OPEN AI API key for authenticating requests to the OPEN AI.
 
         base_url : str, optional
-            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v4/".
+            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v5/".
             Can be overridden with the environment variable 'ONECONTEXT_API_KEY'
 
         Raises
@@ -55,7 +55,7 @@ class OneContext:
         if open_ai_key:
             extra_headers.update({"OPENAI-API-KEY": open_ai_key})
 
-        base_url = base_url or "https://app.onecontext.ai/api/v4/"
+        base_url = base_url or "https://app.onecontext.ai/api/v5/"
         self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)
 

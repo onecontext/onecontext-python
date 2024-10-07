@@ -1,11 +1,15 @@
 import os
 import sys
+
 import pytest
-from onecontext.main import OneContext
 
 # import all the env variables in .env and add them to the environment
 from dotenv import load_dotenv
+
+from onecontext.main import OneContext
+
 load_dotenv()
+
 
 @pytest.fixture
 def api_key():
@@ -14,7 +18,7 @@ def api_key():
 
 @pytest.fixture
 def base_url():
-    return os.getenv("ONECONTEXT_BASE_URL", "https://app.onecontext.ai/api/v4/")
+    return os.getenv("ONECONTEXT_BASE_URL", "https://app.onecontext.ai/api/v5/")
 
 
 @pytest.fixture

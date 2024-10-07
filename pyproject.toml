@@ -52,6 +52,7 @@ dependencies = [
     "python-dotenv",
     "jupyter",
     "yamlmagic",
+    "pydantic",
 ]
 
 [tool.hatch.envs.default.scripts]

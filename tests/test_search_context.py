@@ -2,6 +2,7 @@ import os
 
 import pytest
 from helpers.utils import wait_for_file_processing
+from pydantic import BaseModel, Field
 
 from onecontext.client import ApiError
 from onecontext.context import Context
@@ -79,6 +80,35 @@ def test_search_chunks_parametrized(
 ):
     chunks = context_with_files.search(query, top_k=10, metadata_filters=metadata_filters)
     assert len(chunks) == expected_count
+
+    if metadata_filters:
+        file_tag = metadata_filters["file_tag"]["$eq"]
+        for chunk in chunks:
+            assert chunk.metadata_json
+            assert chunk.metadata_json.get("file_tag") == file_tag
+
+
+@pytest.mark.parametrize(
+    "query, metadata_filters, expected_count",
+    [
+        ("sample query", None, 10),
+    ],
+)
+def test_extract(context_with_files: Context, query: str, metadata_filters: dict, expected_count: int):
+    class PaperInfo(BaseModel):
+        topics: list[str] = Field(description="the topics of the paper")
+
+    output, chunks = context_with_files.extract_from_search(
+        schema=PaperInfo, extraction_prompt="OUTPUT only json", query=query, top_k=10, metadata_filters=metadata_filters
+    )
+
+    assert len(chunks) == expected_count
+
+    PaperInfo.model_validate(output)
+
+    output, chunks = context_with_files.extract_from_chunks(schema=PaperInfo, extraction_prompt="OUTPUT only json")
+
+    PaperInfo.model_validate(output)
 
     if metadata_filters:
         file_tag = metadata_filters["file_tag"]["$eq"]

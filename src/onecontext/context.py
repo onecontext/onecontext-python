@@ -8,13 +8,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
 from tqdm import tqdm
 
 from onecontext.client import URLS, ApiClient
-from onecontext.models import Chunk, File
+from onecontext.models import Chunk, File, PydanticV2BaseModel
 
 SUPPORTED_FILE_TYPES = (
     ".pdf",
@@ -489,14 +489,13 @@ class Context:
             "topK": top_k,
             "includeEmbedding": include_embedding,
             "contextName": self.name,
-            "structuredOutput": None
+            "structuredOutput": None,
         }
 
         if metadata_filters is not None:
             params.update({"metadataFilters": metadata_filters})
 
         return self._post_query(params)
-        
 
     def _post_query(self, params: Dict[str, Any]) -> List[Chunk]:
         results = self._client.post(self._urls.context_search(), json=params)
@@ -565,3 +564,151 @@ class Context:
         chunk_dicts = out["chunks"]
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return chunks
+
+    def extract_from_search(
+        self,
+        query: str,
+        schema: dict[str, Any] | PydanticV2BaseModel,
+        extraction_prompt: str,
+        *,
+        top_k: int = 10,
+        semantic_weight: float = 0.5,
+        full_text_weight: float = 0.5,
+        rrf_k: int = 60,
+        include_embedding: bool = False,
+        metadata_filters: Optional[dict] = None,
+    ) -> Tuple[dict, List[Chunk]]:
+        """
+        Runs a hybrid query using semantic and full-text search
+        against the context.
+
+        Parameters
+        ----------
+        query : str
+            The query string to search for.
+        schema: dict | PydanticV2BaseModel
+            the schema to be populated or a pydantic (v2) Base Model
+        extraction_prompt: str
+            the prompt to pass to the model at extraction time. eg: "Produce only json output matching the given schema"
+
+        semantic_weight : float, optional
+            The weight given to semantic search results, by default 0.5.
+        full_text_weight : float, optional
+            The weight given to full-text search results, by default 0.5.
+            this is uses key word search to compliment semantic search results
+        rrf_k : int, optional
+            The reciprocal rank fusion parameter for combining semantic and full-text search scores, by default 60.
+        top_k : int, optional
+            The number of top results to return, by default 10.
+        include_embedding : bool, optional
+            Flag to include the embedding in the returned Chunk objects, by default False.
+        metadata_filters : Optional[dict[str, Any]], optional
+            A dictionary of filters based on metadata to apply to the chunk retrieval.
+
+        Returns
+        -------
+        List[Chunk]
+            A list of Chunk objects that are the result of running the query with the specified parameters.
+
+        """
+
+        if isinstance(schema, PydanticV2BaseModel):
+            schema = schema.model_json_schema()
+        elif not isinstance(schema, dict):
+            raise ValueError("schema must be a dict or a BaseModel with model_json_schema methdod")
+
+        if not query:
+            raise ValueError("The query string must not be empty.")
+
+        if not extraction_prompt:
+            raise ValueError("The prompt string must not be empty.")
+
+        if not (0 <= semantic_weight <= 1):
+            raise ValueError("semantic_weight must be between 0 and 1.")
+
+        if not (0 <= full_text_weight <= 1):
+            raise ValueError("full_text_weight must be between 0 and 1.")
+
+        if semantic_weight == 0 and full_text_weight == 0:
+            raise ValueError("Both semantic_weight and full_text_weight cannot be zero.")
+
+        params = {
+            "query": query,
+            "semanticWeight": semantic_weight,
+            "fullTextWeight": full_text_weight,
+            "rrfK": rrf_k,
+            "topK": top_k,
+            "includeEmbedding": include_embedding,
+            "contextName": self.name,
+            "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt},
+        }
+
+        if metadata_filters is not None:
+            params.update({"metadataFilters": metadata_filters})
+
+        results = self._client.post(self._urls.context_search(), json=params)
+        chunks = [Chunk(**chunk) for chunk in results["chunks"]]
+        output = results["output"]
+        return output, chunks
+
+    def extract_from_chunks(
+        self,
+        schema: dict[str, Any] | PydanticV2BaseModel,
+        extraction_prompt: str,
+        *,
+        metadata_filters: Optional[dict[str, Any]] = None,
+        limit: int = 50,
+        include_embedding: bool = False,
+        file_id: Optional[str] = None,
+    ) -> Tuple[dict, List[Chunk]]:
+        """
+        Retrieves a list of Chunk objects from the context with optional filters.
+
+        Parameters
+        ----------
+        schema: dict | PydanticV2BaseModel
+            the schema to be populated, either a valid json schema or pydantic BaseModel
+        extraction_prompt: str
+            the prompt to pass to the model at extraction time. eg: "Produce only json output matching the given schema"
+        metadata_filters : Optional[dict[str, Any]], optional
+            A dictionary of filters based on metadata to apply to the chunk retrieval.
+        limit : int, optional
+            The maximum number of Chunk objects to return, by default 50.
+        include_embedding : bool, optional
+            Flag to include the embedding in the returned Chunk objects, by default False.
+        file_id : Optional[str], optional
+            A specific file ID to filter chunks by, by default None.
+
+        Returns
+        -------
+        list[Chunk]
+            A list of Chunk objects
+
+        """
+
+        if isinstance(schema, PydanticV2BaseModel):
+            schema = schema.model_json_schema()
+        elif not isinstance(schema, dict):
+            raise ValueError("schema must be a dict or a BaseModel with model_json_schema methdod")
+
+        if not extraction_prompt:
+            raise ValueError("The prompt string must not be empty.")
+
+        data = {
+            "contextName": self.name,
+            "limit": limit,
+            "includeEmbedding": include_embedding,
+            "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt},
+        }
+
+        if metadata_filters is not None:
+            data.update({"metadataFilters": metadata_filters})
+
+        if file_id is not None:
+            data.update({"fileId": file_id})
+
+        out = self._client.post(self._urls.context_chunks(), json=data)
+        chunk_dicts = out["chunks"]
+        output = out["output"]
+        chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
+        return output, chunks

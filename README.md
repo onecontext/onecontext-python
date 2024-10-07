@@ -163,6 +163,32 @@ for semantic, and fullText weights. For more see
 metadata. See the OneContext Structured Query Language section below for the
 syntax details
 
+### Extract Structured Output from your Context
+
+You can get structured output directly from your context by providing a json schema
+or a pydantic (v2) `BaseModel`:
+
+```python
+
+from pydantic import BaseModel, Field
+
+class RockBandInfo(BaseModel):
+    title: str = Field(description="a title of a 1970s rockband")
+    lyrics: str = Field(description="lyrics to their absolute banger of a song")
+
+context = oc.Context("my_context")
+
+output_dict, chunks = context.extract_from_search(
+    query="tell me about rockbands",
+    schema=RockBandInfo, # you can pass a pydantic model or a json schema dict
+    extraction_prompt="Output only JSON matching the provided schema about the rockbands",
+)
+
+rock_band = RockBandInfo.model_validate(output_dict)
+```
+`extract_from_search` works just like search but returns the structured output
+as a dictionary as well as the reference chunks.
+
 # OneContext Structured Query Language
 
 OneContext allows you to use a custom "Structured Query Language" to filter
