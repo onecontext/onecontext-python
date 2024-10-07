@@ -178,6 +178,7 @@ class RockBandInfo(BaseModel):
 
 context = oc.Context("my_context")
 
+
 output_dict, chunks = context.extract_from_search(
     query="tell me about rockbands",
     schema=RockBandInfo, # you can pass a pydantic model or a json schema dict
@@ -188,6 +189,22 @@ rock_band = RockBandInfo.model_validate(output_dict)
 ```
 `extract_from_search` works just like search but returns the structured output
 as a dictionary as well as the reference chunks.
+
+Note that pydantic is not a dependency of `onecontext`; you an pass a json schema
+definition directly to the extract methods instead of a `BaseModel`.
+
+You can also extract structured output directly from chunks without performing as search:
+
+```python
+output_dict, chunks = context.extract_from_chunks(
+    schema=RockBandInfo, # you can pass a pydantic model or a json schema dict
+    extraction_prompt="Output only JSON matching the provided schema about the rockbands",
+    metadata_filters = {"tag" : {"$eq" : "rockband"}}
+)
+
+rock_band = RockBandInfo.model_validate(output_dict)
+```
+
 
 # OneContext Structured Query Language
 
