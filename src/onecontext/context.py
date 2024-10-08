@@ -194,13 +194,8 @@ class Context:
 
     def get_chunks_by_ids(self, ids: List[str]) -> List[Chunk]:
         data = {"contextName": self.name, "chunkIds": ids}
-        try: 
-            chunks = self._client.post(self._urls.context_chunks_by_ids(), json=data)
-        except Exception as e:
-            print(e)
-            return []
-
-        return chunks 
+        chunks = self._client.post(self._urls.context_chunks_by_ids(), json=data)
+        return chunks
 
     def _upload_file(self, file_path: Path, metadata: Optional[dict] = None):
         mime_type = guess_mime_type(file_path)
