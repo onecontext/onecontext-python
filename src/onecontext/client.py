@@ -36,6 +36,9 @@ class URLS:
 
     def context_chunks(self) -> str:
         return self._join_base("context/chunk/")
+    
+    def context_chunks_by_ids(self) -> str:
+        return self._join_base("context/chunk/byids/")
 
     def context(self) -> str:
         return self._join_base("context")
