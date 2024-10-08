@@ -508,7 +508,7 @@ class Context:
 
     def delete_file(self, file_id: str) -> None:
         data = {"fileId": file_id}
-        self._client.post(self._urls.context_files(), json=data)
+        self._client.delete(self._urls.context_files(), json=data)
 
     def get_download_url(self, file_id: str) -> str:
         data = {"fileId": file_id}
