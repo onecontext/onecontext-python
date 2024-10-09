@@ -592,7 +592,7 @@ class Context:
         query : str
             The query string to search for.
         schema: dict | PydanticV2BaseModel
-            the schema to be populated or a pydantic (v2) Base Model
+            the json schema to be populated or a pydantic (v2) Base Model
         extraction_prompt: str
             the prompt to pass to the model at extraction time. eg: "Produce only json output matching the given schema"
 
