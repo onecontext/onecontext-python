@@ -694,7 +694,7 @@ class Context:
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
         elif not isinstance(schema, dict):
-            raise ValueError("schema must be a dict or a BaseModel with model_json_schema methdod")
+            raise ValueError("The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/).")
 
         if not extraction_prompt:
             raise ValueError("The prompt string must not be empty.")
