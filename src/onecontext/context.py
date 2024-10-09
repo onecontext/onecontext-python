@@ -620,7 +620,9 @@ class Context:
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
         elif not isinstance(schema, dict):
-            raise ValueError("schema must be a dict or a BaseModel with model_json_schema methdod")
+            raise ValueError(
+                "schema must be a json_schema dict or a pydantic v2 BaseModel with model_json_schema methdod"
+            )
 
         if not query:
             raise ValueError("The query string must not be empty.")
@@ -672,7 +674,7 @@ class Context:
         Parameters
         ----------
         schema: dict | PydanticV2BaseModel
-            the schema to be populated, either a valid json schema or pydantic BaseModel
+            the schema to be populated, either a valid json schema or pydantic v2 BaseModel
         extraction_prompt: str
             the prompt to pass to the model at extraction time. eg: "Produce only json output matching the given schema"
         metadata_filters : Optional[dict[str, Any]], optional
@@ -694,7 +696,9 @@ class Context:
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
         elif not isinstance(schema, dict):
-            raise ValueError("schema must be a dict or a BaseModel with model_json_schema methdod")
+            raise ValueError(
+                "schema must be a json_schema dict or a pydantic v2 BaseModel with model_json_schema methdod"
+            )
 
         if not extraction_prompt:
             raise ValueError("The prompt string must not be empty.")
