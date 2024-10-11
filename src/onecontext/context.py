@@ -194,7 +194,9 @@ class Context:
 
     def get_chunks_by_ids(self, ids: List[str]) -> List[Chunk]:
         data = {"contextName": self.name, "chunkIds": ids}
-        chunks = self._client.post(self._urls.context_chunks_by_ids(), json=data)
+        response = self._client.post(self._urls.context_chunks_by_ids(), json=data)
+        chunk_dicts = response["chunks"]
+        chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return chunks
 
     def _upload_file(self, file_path: Path, metadata: Optional[dict] = None):
@@ -620,7 +622,9 @@ class Context:
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
         elif not isinstance(schema, dict):
-            raise ValueError("The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/).")
+            raise ValueError(
+                "The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/)."
+            )
 
         if not query:
             raise ValueError("The query string must not be empty.")
@@ -694,7 +698,9 @@ class Context:
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
         elif not isinstance(schema, dict):
-            raise ValueError("The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/).")
+            raise ValueError(
+                "The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/)."
+            )
 
         if not extraction_prompt:
             raise ValueError("The prompt string must not be empty.")
