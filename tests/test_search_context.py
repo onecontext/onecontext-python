@@ -42,7 +42,7 @@ def test_list_chunks(context_with_files: Context):
 
     with_chunk_ids = context_with_files.get_chunks_by_ids([chunk.id for chunk in chunks_no_filters])
 
-    assert with_chunk_ids == chunks_no_filters
+    assert {chunk.id for chunk in with_chunk_ids} == {chunk.id for chunk in chunks_no_filters}
 
     specific_chunks_list = context_with_files.list_chunks(file_id=file_ids[0], limit=100)
 

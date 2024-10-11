@@ -194,8 +194,12 @@ class Context:
 
     def get_chunks_by_ids(self, ids: List[str]) -> List[Chunk]:
         data = {"contextName": self.name, "chunkIds": ids}
+
         response = self._client.post(self._urls.context_chunks_by_ids(), json=data)
-        chunk_dicts = response["chunks"]
+
+        chunk_dicts = [
+            {field.name: chunk.get(field.name) for field in dataclasses.fields(Chunk)} for chunk in response["chunks"]
+        ]
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return chunks
 
