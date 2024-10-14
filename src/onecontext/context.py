@@ -2,6 +2,7 @@ import dataclasses
 import json
 import mimetypes
 import os
+import sys
 import tempfile
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -11,10 +12,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
+from urllib3.util import Retry
 
 from onecontext.client import URLS, ApiClient
 from onecontext.models import Chunk, File, PydanticV2BaseModel
+from onecontext.utils import batch_by_size
 
 SUPPORTED_FILE_TYPES = (
     ".pdf",
@@ -41,6 +45,9 @@ SUPPORTED_FILE_TYPES = (
     ".txt",
     ".xml",
 )
+
+
+PROCESS_UPLOADED_BATCH = 100
 
 
 def guess_mime_type(file_path: Union[str, Path]):
@@ -183,43 +190,46 @@ class Context:
 
         return files
 
-    def _get_upload_url(self, file_name: str):
-        data = {"fileNames": [file_name], "contextName": self.name}
-        upload_params_data = self._client.post(self._urls.context_files_upload_url(), json=data)
-
-        upload_url = upload_params_data[0].get("presignedUrl")
-        file_id = upload_params_data[0].get("fileId")
-        storage_uri = upload_params_data[0].get("gcsUri")
-        return upload_url, file_id, storage_uri
-
     def get_chunks_by_ids(self, ids: List[str]) -> List[Chunk]:
         data = {"contextName": self.name, "chunkIds": ids}
         chunks = self._client.post(self._urls.context_chunks_by_ids(), json=data)
         return chunks
 
-    def _upload_file(self, file_path: Path, metadata: Optional[dict] = None):
-        mime_type = guess_mime_type(file_path)
-        file_name = file_path.name
+    def _get_upload_params(self, file_paths: list[Path]) -> List[Dict[str, Any]]:
+        """
+        Retrieves the upload parameters for the given file names.
+
+        This method posts a request to the context files upload URL with the file names
+        and context name. It processes the response to retrieve upload parameters for each file.
+
+        :param file_names: A list of file names for which to retrieve upload parameters
+        :return: A list of dictionaries each containing the upload parameters for a file.
+                 The dictionary keys include:
+                 - "presignedUrl": A URL for the client to upload files directly to the storage
+                 - "fileId": A unique identifier for the file
+                 - "gcsUri": The Google Cloud Storage URI of the uploaded file
+                -  "fileType" : the file type
+        """
+
+        file_names = [path.name for path in file_paths]
+        data = {"fileNames": file_names, "contextName": self.name}
+        upload_params_data = self._client.post(self._urls.context_files_upload_url(), json=data)
+        for path, params in zip(file_paths, upload_params_data):
+            params["fileName"] = path.name
+            params["fileType"] = guess_mime_type(path)
+
+        return upload_params_data
+
+    def _upload_file(self, file_path: Path, upload_url: str, content_type: str):
         file_content = file_path.read_bytes()
-
-        upload_url, file_id, gcs_uri = self._get_upload_url(file_name)
-
         # Upload the file to the presigned URL
-        response = requests.put(upload_url, data=file_content, headers={"Content-Type": mime_type})
+        s = requests.Session()
+        retries = Retry(total=3, backoff_factor=1, status_forcelist=[502, 503, 504])
+        s.mount("https://", HTTPAdapter(max_retries=retries))
+        response = s.put(upload_url, data=file_content, headers={"Content-Type": content_type})
 
         if response.status_code != 200:
-            raise ValueError(f"Failed to upload {file_name} to OneContext Storage.")
-
-        metadata = metadata if metadata else {}
-
-        file = {
-            "fileId": file_id,
-            "fileName": file_name,
-            "fileType": mime_type,
-            "gcsUri": gcs_uri,
-            "metadataJson": metadata,
-        }
-        return file
+            raise ValueError(f"Failed to upload {file_path!s} to OneContext Storage.")
 
     def upload_files(
         self,
@@ -280,17 +290,35 @@ class Context:
 
         metadata = [parse_metadata(m, flatten_metadata) for m in metadata]
 
-        to_upload = list(zip(_file_paths, metadata))
-
-        def _upload_path_meta(path_meta: tuple):
-            file = self._upload_file(*path_meta)
-            data = {"contextName": self.name, "contextId": self.id, "maxChunkSize": max_chunk_size, "files": [file]}
-            self._client.post(self._urls.context_files_upload_processed(), json=data)
-
         disable = not verbose if verbose is not None else None
 
+        upload_files_spec = self._get_upload_params(_file_paths)
+
+        upload_args = [
+            (path, upload_file["presignedUrl"], upload_file["fileType"])
+            for path, upload_file in zip(_file_paths, upload_files_spec)
+        ]
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            list(tqdm(executor.map(_upload_path_meta, to_upload), total=len(to_upload), disable=disable))
+            list(
+                tqdm(
+                    executor.map(lambda args: self._upload_file(*args), upload_args),
+                    total=len(upload_args),
+                    disable=disable,
+                )
+            )
+
+        for uploaded_file, meta in zip(upload_files_spec, metadata):
+            uploaded_file["metadataJson"] = meta
+
+        for batch in batch_by_size(upload_files_spec, 3):
+            data = {
+                "contextName": self.name,
+                "contextId": self.id,
+                "maxChunkSize": max_chunk_size,
+                "files": batch,
+            }
+            self._client.post(self._urls.context_files_upload_processed(), json=data)
 
     def upload_texts(
         self,
@@ -620,7 +648,9 @@ class Context:
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
         elif not isinstance(schema, dict):
-            raise ValueError("The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/).")
+            raise ValueError(
+                "The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/)."
+            )
 
         if not query:
             raise ValueError("The query string must not be empty.")
@@ -694,7 +724,9 @@ class Context:
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
         elif not isinstance(schema, dict):
-            raise ValueError("The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/).")
+            raise ValueError(
+                "The Schema passed must be either a Pydantic v2 BaseModel (i.e. a BaseModel with a 'model_json_schema' method which outputs valid json schema, or, a dictionary which already confirms to valid json schema. (For more on the exact definition of json schema see: https://json-schema.org/)."
+            )
 
         if not extraction_prompt:
             raise ValueError("The prompt string must not be empty.")
