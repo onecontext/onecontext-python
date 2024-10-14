@@ -4,6 +4,7 @@ import mimetypes
 import os
 import sys
 import tempfile
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -305,20 +306,38 @@ class Context:
                     executor.map(lambda args: self._upload_file(*args), upload_args),
                     total=len(upload_args),
                     disable=disable,
+                    desc="Uploading files",
                 )
             )
 
         for uploaded_file, meta in zip(upload_files_spec, metadata):
             uploaded_file["metadataJson"] = meta
 
-        for batch in batch_by_size(upload_files_spec, 3):
+        batch_size = 50
+        process_uploaded_batches = []
+
+        for i in range(0, len(upload_files_spec), batch_size):
+            batch = upload_files_spec[i : i + batch_size]
             data = {
                 "contextName": self.name,
                 "contextId": self.id,
                 "maxChunkSize": max_chunk_size,
                 "files": batch,
             }
+
+            process_uploaded_batches.append(data)
+
+        def _processes_uploaded(data):
             self._client.post(self._urls.context_files_upload_processed(), json=data)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            list(
+                tqdm(
+                    executor.map(_processes_uploaded, process_uploaded_batches),
+                    total=len(process_uploaded_batches),
+                    desc="Uploading metadata (batches)",
+                )
+            )
 
     def upload_texts(
         self,
