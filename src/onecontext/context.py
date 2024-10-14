@@ -48,7 +48,7 @@ SUPPORTED_FILE_TYPES = (
 )
 
 
-PROCESS_UPLOADED_BATCH = 100
+MAX_UPLOAD = 15_000
 
 
 def guess_mime_type(file_path: Union[str, Path]):
@@ -281,6 +281,10 @@ class Context:
             If any reserved keys are present in the metadata.
             If the file type is not supported (not in SUPPORTED_FILE_TYPES).
         """
+
+        if len(file_paths) > MAX_UPLOAD:
+            raise ValueError(f"You cannot appload more that {MAX_UPLOAD} files at a time")
+
         _file_paths = [parse_file_path(path) for path in file_paths]
 
         if metadata and len(metadata) != len(file_paths):
