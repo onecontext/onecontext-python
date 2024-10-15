@@ -317,11 +317,9 @@ class Context:
         for uploaded_file, meta in zip(upload_files_spec, metadata):
             uploaded_file["metadataJson"] = meta
 
-        batch_size = 50
         process_uploaded_batches = []
 
-        for i in range(0, len(upload_files_spec), batch_size):
-            batch = upload_files_spec[i : i + batch_size]
+        for batch in batch_by_size(upload_files_spec, 3):
             data = {
                 "contextName": self.name,
                 "contextId": self.id,
