@@ -22,8 +22,14 @@ def base_url():
 
 
 @pytest.fixture
-def client(api_key, base_url):
-    client = OneContext(api_key=api_key, base_url=base_url)
+def bypass():
+    return os.getenv("BYPASS")
+
+
+@pytest.fixture
+def client(api_key, base_url, bypass):
+    extra_headers = {"x-vercel-protection-bypass": bypass}
+    client = OneContext(api_key=api_key, base_url=base_url, extra_headers=extra_headers)
     return client
 
 
