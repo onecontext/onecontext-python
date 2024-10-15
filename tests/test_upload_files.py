@@ -12,11 +12,12 @@ from onecontext.main import OneContext
 @pytest.fixture(scope="function")
 def context(client: OneContext, request):
     context_name = f"test_context_{request.node.name}"
-    print(context_name)
-    client.delete_context(context_name)
-    context = client.create_context(context_name)
-    yield context
-    client.delete_context(context_name)
+    try:
+        client.delete_context(context_name)
+        context = client.create_context(context_name)
+        yield context
+    finally:
+        client.delete_context(context_name)
 
 
 def download_file(file_url, local_path):
