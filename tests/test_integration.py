@@ -12,9 +12,13 @@ def context(client: OneContext):
     context_name = "test_context"
     current_file_name = os.path.splitext(os.path.basename(__file__))[0]
     context_name += "_" + current_file_name
-    context = client.create_context(context_name)
-    yield context
-    client.delete_context(context_name)
+
+    try:
+        context = client.create_context(context_name)
+        yield context
+
+    finally:
+        client.delete_context(context_name)
 
 
 def test_integration(context: Context, test_files_directory: str):
