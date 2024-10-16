@@ -3,7 +3,7 @@ import time
 from onecontext.context import Context
 
 
-def wait_for_file_processing(context: Context, timeout_seconds: int = 180):
+def wait_for_file_processing(context: Context, timeout_seconds: int = 300):
     start_time = time.time()
 
     while True:
