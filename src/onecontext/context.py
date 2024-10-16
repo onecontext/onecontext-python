@@ -344,6 +344,7 @@ class Context:
                     executor.map(_processes_uploaded, process_uploaded_batches),
                     total=len(process_uploaded_batches),
                     desc="Uploading metadata (batches)",
+                    disable=disable,
                 )
             )
 
