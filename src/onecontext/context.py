@@ -395,6 +395,11 @@ class Context:
         else:
             valid_file_names = [Path(f"{uuid.uuid4()}.txt") for _ in contents]
 
+        all_contents = [bool(len(content)) for content in contents]
+
+        if not all(all_contents):
+            raise ValueError("Attempting to upload empty string")
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_paths = []
 
