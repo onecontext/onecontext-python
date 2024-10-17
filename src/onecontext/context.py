@@ -57,11 +57,11 @@ def guess_mime_type(file_path: Union[str, Path]):
     return mime_type
 
 
-def is_supported_file(file_path: str | Path) -> bool:
+def is_supported_file(file_path: Union[str, Path]) -> bool:
     return Path(file_path).suffix in SUPPORTED_FILE_TYPES
 
 
-def parse_file_path(file_path: str | Path):
+def parse_file_path(file_path: Union[str, Path]):
     file_path = Path(file_path)
     if not file_path.exists():
         raise ValueError(f"The file at {file_path} does not exist.")
@@ -72,7 +72,7 @@ def parse_file_path(file_path: str | Path):
     return file_path
 
 
-def flatten_dict(dict_: dict, parent_key: str = "", sep: str = "_") -> dict:
+def flatten_dict(dict_: Dict, parent_key: str = "", sep: str = "_") -> Dict:
     items = []
     for k, v in dict_.items():
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
@@ -202,7 +202,7 @@ class Context:
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return chunks
 
-    def _get_upload_params(self, file_paths: list[Path]) -> List[Dict[str, Any]]:
+    def _get_upload_params(self, file_paths: List[Path]) -> List[Dict[str, Any]]:
         """
         Retrieves the upload parameters for the given file names.
 
@@ -240,8 +240,8 @@ class Context:
 
     def upload_files(
         self,
-        file_paths: Union[list[str], list[Path]],
-        metadata: Optional[list[dict]] = None,
+        file_paths: Union[List[str], List[Path]],
+        metadata: Optional[List[dict]] = None,
         max_chunk_size: int = 200,
         flatten_metadata: bool = False,
         max_workers: int = 10,
@@ -350,9 +350,9 @@ class Context:
 
     def upload_texts(
         self,
-        contents: list[str],
-        file_names: Optional[list[str]] = None,
-        metadata: Optional[list[dict]] = None,
+        contents: List[str],
+        file_names: Optional[List[str]] = None,
+        metadata: Optional[List[dict]] = None,
         max_chunk_size: int = 200,
         flatten_metadata: bool = False,
         max_workers: int = 10,
@@ -579,11 +579,11 @@ class Context:
     def list_chunks(
         self,
         *,
-        metadata_filters: Optional[dict[str, Any]] = None,
+        metadata_filters: Optional[Dict[str, Any]] = None,
         limit: int = 50,
         include_embedding: bool = False,
         file_id: Optional[str] = None,
-    ) -> list[Chunk]:
+    ) -> List[Chunk]:
         """
         Retrieves a list of Chunk objects from the context with optional filters.
 
@@ -634,7 +634,7 @@ class Context:
     def extract_from_search(
         self,
         query: str,
-        schema: dict[str, Any] | PydanticV2BaseModel,
+        schema: Union[Dict[str, Any], PydanticV2BaseModel],
         extraction_prompt: str,
         *,
         top_k: int = 10,
@@ -721,10 +721,10 @@ class Context:
 
     def extract_from_chunks(
         self,
-        schema: dict[str, Any] | PydanticV2BaseModel,
+        schema: Union[Dict[str, Any], PydanticV2BaseModel],
         extraction_prompt: str,
         *,
-        metadata_filters: Optional[dict[str, Any]] = None,
+        metadata_filters: Optional[Dict[str, Any]] = None,
         limit: int = 50,
         include_embedding: bool = False,
         file_id: Optional[str] = None,
