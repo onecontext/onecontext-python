@@ -296,7 +296,7 @@ class Context:
         """
 
         if len(file_paths) > MAX_UPLOAD:
-            raise ValueError(f"You cannot appload more that {MAX_UPLOAD} files at a time")
+            raise ValueError(f"You cannot upload more that {MAX_UPLOAD} files at a time")
 
         _file_paths = [parse_file_path(path) for path in file_paths]
 
