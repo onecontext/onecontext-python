@@ -140,6 +140,7 @@ class Context:
         self,
         *,
         file_ids: Optional[list] = None,
+        file_names: Optional[list] = None,
         skip=0,
         limit=500,
         sort="date_created",
@@ -152,7 +153,8 @@ class Context:
         ----------
         file_ids : list, optional
             A list of file IDs to filter the files to be listed. If None, all files are listed.
-
+        file_names: list, optional
+            A list of files names to filter the files to be listed. If None, all files are listed.
         skip : int, optional
             The number of files to skip (default is 0).
         limit : int, optional
@@ -170,6 +172,10 @@ class Context:
             A list of dictionaries, each representing a file with its metadata.
 
         """
+        
+        if file_names and file_ids:
+            pass
+            
 
         data: Dict[str, Any] = self._client.post(
             self._urls.context_files(),
@@ -180,6 +186,7 @@ class Context:
                 "sort": sort,
                 "getDownloadUrls": get_download_urls,
                 "fileIds": file_ids,
+                "fileNames": file_names
             },
         )
 
