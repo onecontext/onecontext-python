@@ -174,7 +174,7 @@ class Context:
         """
         
         if file_names and file_ids:
-            pass
+            raise ValueError("You cannot pass both file_names AND file_ids parameters. You have to choose one.")
             
 
         data: Dict[str, Any] = self._client.post(
