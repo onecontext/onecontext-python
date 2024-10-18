@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 
 @dataclass
@@ -26,7 +26,7 @@ class Chunk:
         The creation date and time of the chunk.
     file_name : Optional[str], optional
         The name of the file associated with the chunk.
-    embedding : Optional[list[float]], optional
+    embedding : Optional[List[float]], optional
         The vector embedding representing the semantic content of the chunk.
     semantic_score : Optional[float], optional
         A score representing the semantic relevance of the chunk.
@@ -44,7 +44,7 @@ class Chunk:
     metadata_json: Optional[Dict] = None
     date_created: Optional[datetime] = None
     file_name: Optional[str] = None
-    embedding: Optional[list[float]] = None
+    embedding: Optional[List[float]] = None
     semantic_score: Optional[float] = None
     fulltext_score: Optional[float] = None
     combined_score: Optional[float] = None
@@ -90,4 +90,4 @@ class File:
 
 @runtime_checkable
 class PydanticV2BaseModel(Protocol):
-    def model_json_schema(*args, **kwargs) -> dict[str, Any]: ...
+    def model_json_schema(*args, **kwargs) -> Dict[str, Any]: ...
