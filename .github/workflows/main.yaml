@@ -12,6 +12,10 @@ jobs:
     environment:
       name: publish
       url: https://github.com
+    env:
+      ONECONTEXT_API_KEY: ${{ secrets.ONECONTEXT_API_KEY }}
+      HATCH_INDEX_USER: ${{ secrets.HATCH_INDEX_USER }}
+      HATCH_INDEX_AUTH: ${{ secrets.HATCH_INDEX_AUTH }}
     steps:
       - uses: actions/checkout@v3
       - name: Install Hatch
