@@ -1,0 +1,22 @@
+name: Client Python Package
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Hatch
+        run: pipx install hatch
+      - name: Run tests
+        run: hatch run test
+      - name: Build dist
+        run: hatch build
+      - name: Publish on PyPI
+        if: github.ref == 'refs/heads/main'
+        run: hatch publish
