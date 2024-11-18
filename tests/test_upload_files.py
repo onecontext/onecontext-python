@@ -32,13 +32,17 @@ def test_upload_files(client: OneContext, context: Context, file_paths: list):
 
     # file_paths = [file_paths[0]]
     # metadata = [metadata[0]]
-    context.upload_files(file_paths, metadata=metadata)
+    file_ids = context.upload_files(file_paths, metadata=metadata)
 
     wait_for_file_processing(context)
 
     files = context.list_files()
 
     file_names_and_meta = {os.path.basename(file_path): meta for file_path, meta in zip(file_paths, metadata)}
+
+    assert file_ids
+
+    assert {file.id for file in files} == set(file_ids)
 
     for file in files:
         assert file_names_and_meta[file.name] == file.metadata_json
