@@ -172,10 +172,9 @@ class Context:
             A list of dictionaries, each representing a file with its metadata.
 
         """
-        
+
         if file_names and file_ids:
             raise ValueError("You cannot pass both file_names AND file_ids parameters. You have to choose one.")
-            
 
         data: Dict[str, Any] = self._client.post(
             self._urls.context_files(),
@@ -186,7 +185,7 @@ class Context:
                 "sort": sort,
                 "getDownloadUrls": get_download_urls,
                 "fileIds": file_ids,
-                "fileNames": file_names
+                "fileNames": file_names,
             },
         )
 
@@ -253,7 +252,7 @@ class Context:
         flatten_metadata: bool = False,
         max_workers: int = 10,
         verbose: Optional[bool] = None,
-    ) -> None:
+    ) -> List[str]:
         """
         Uploads files to the context.
 
@@ -355,6 +354,10 @@ class Context:
                 )
             )
 
+        file_ids = [spec["fileId"] for spec in upload_files_spec]
+
+        return file_ids
+
     def upload_texts(
         self,
         contents: List[str],
@@ -363,7 +366,7 @@ class Context:
         max_chunk_size: int = 200,
         flatten_metadata: bool = False,
         max_workers: int = 10,
-    ) -> None:
+    ) -> List[str]:
         """
         Uploads text content as files to the context.
 
@@ -423,13 +426,15 @@ class Context:
                     f.write(content)
                 file_paths.append(file_path)
 
-            self.upload_files(
+            file_ids = self.upload_files(
                 file_paths=file_paths,
                 metadata=metadata,
                 max_chunk_size=max_chunk_size,
                 flatten_metadata=flatten_metadata,
                 max_workers=max_workers,
             )
+
+        return file_ids
 
     def upload_from_directory(
         self,
@@ -438,7 +443,7 @@ class Context:
         max_chunk_size: int = 200,
         flatten_metadata: bool = False,
         max_workers: int = 10,
-    ) -> None:
+    ) -> List[str]:
         """
         Uploads files from a given directory to a context.
 
@@ -486,12 +491,14 @@ class Context:
 
         metadata_list = [metadata] * len(files_to_upload) if metadata else None
 
-        self.upload_files(
+        file_ids = self.upload_files(
             file_paths=files_to_upload,
             metadata=metadata_list,
             flatten_metadata=flatten_metadata,
             max_workers=max_workers,
         )
+
+        return file_ids
 
     def search(
         self,
@@ -789,3 +796,4 @@ class Context:
         output = out["output"]
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return output, chunks
+
