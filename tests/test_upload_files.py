@@ -45,7 +45,7 @@ def test_upload_files(client: OneContext, context: Context, file_paths: list):
     assert {file.id for file in files} == set(file_ids)
 
     for file in files:
-        assert file_names_and_meta[file.name] == file.metadata_json
+        assert {"file_id": file.id, **file_names_and_meta[file.name]} == file.metadata_json
 
     assert len(files) == 2
 
