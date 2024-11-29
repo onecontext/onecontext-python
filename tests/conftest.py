@@ -20,7 +20,6 @@ def api_key():
 def base_url():
     return os.getenv("ONECONTEXT_BASE_URL", "https://app.onecontext.ai/api/v5/")
 
-
 @pytest.fixture
 def bypass():
     return os.getenv("BYPASS")
