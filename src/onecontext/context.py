@@ -584,6 +584,20 @@ class Context:
     def delete_file(self, file_id: str) -> None:
         data = {"fileId": file_id}
         self._client.delete(self._urls.context_files(), json=data)
+        
+    def update_file_meta(self, file_id: str, update_object: dict[str, Any]) -> None:
+        # check the provided update object is json serializable, and flatten it
+        update_object = parse_metadata(update_object, flatten=True)
+        # check the keys for rogue separators
+        check_keys(update_object)
+        # create the body
+        data = {"fileId": file_id, "updateObject": update_object}
+        # ship it
+        self._client.post(self._urls.update_file_meta(), json=data)
+        
+    def clear_file_meta(self, file_id: str) -> None:
+        data = {"fileId": file_id}
+        self._client.post(self._urls.clear_file_meta(), json=data)
 
     def get_download_url(self, file_id: str) -> str:
         data = {"fileId": file_id}

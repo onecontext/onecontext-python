@@ -48,7 +48,12 @@ class URLS:
 
     def context_search(self) -> str:
         return self._join_base("context/chunk/search")
+    
+    def update_file_meta(self) -> str:
+        return self._join_base("context/file/update-meta")
 
+    def clear_file_meta(self) -> str:
+        return self._join_base("context/file/clear-meta")
 
 class ApiClient:
     def __init__(self, api_key: str, extra_headers: Optional[Dict[str, Any]] = None) -> None:
