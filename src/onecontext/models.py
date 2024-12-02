@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, List, Optional
+
+from typing_extensions import Protocol, runtime_checkable
 
 
 @dataclass
@@ -91,3 +93,4 @@ class File:
 @runtime_checkable
 class PydanticV2BaseModel(Protocol):
     def model_json_schema(*args, **kwargs) -> Dict[str, Any]: ...
+

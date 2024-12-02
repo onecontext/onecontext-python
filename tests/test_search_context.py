@@ -1,11 +1,11 @@
 import os
+from typing import List
 
 import pytest
 from helpers.utils import wait_for_file_processing
 from pydantic import BaseModel, Field
 
-from onecontext.client import ApiError
-from onecontext.context import Context
+from onecontext.context import Context, StructuredOutputModel
 from onecontext.main import OneContext
 
 
@@ -93,24 +93,34 @@ def test_search_chunks_parametrized(
 
 
 @pytest.mark.parametrize(
-    "query, metadata_filters, expected_count",
+    "query, metadata_filters, expected_count, model",
     [
-        ("sample query", None, 10),
+        ("sample query", None, 10, "gpt-4o-mini"),
+        ("sample query", None, 10, "claude-35"),
     ],
 )
-def test_extract(context_with_files: Context, query: str, metadata_filters: dict, expected_count: int):
+def test_extract(
+    context_with_files: Context, query: str, metadata_filters: dict, expected_count: int, model: StructuredOutputModel
+):
     class PaperInfo(BaseModel):
-        topics: list[str] = Field(description="the topics of the paper")
+        topics: List[str] = Field(description="the topics of the paper")
 
     output, chunks = context_with_files.extract_from_search(
-        schema=PaperInfo, extraction_prompt="OUTPUT only json", query=query, top_k=10, metadata_filters=metadata_filters
+        schema=PaperInfo,
+        extraction_prompt="OUTPUT only json",
+        query=query,
+        top_k=10,
+        metadata_filters=metadata_filters,
+        model=model,
     )
 
     assert len(chunks) == expected_count
 
     PaperInfo.model_validate(output)
 
-    output, chunks = context_with_files.extract_from_chunks(schema=PaperInfo, extraction_prompt="OUTPUT only json")
+    output, chunks = context_with_files.extract_from_chunks(
+        schema=PaperInfo, extraction_prompt="OUTPUT only json", model=model
+    )
 
     PaperInfo.model_validate(output)
 

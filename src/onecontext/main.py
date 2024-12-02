@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from onecontext.client import URLS, ApiClient, ApiError, ConfigurationError
 from onecontext.context import Context
@@ -12,6 +12,7 @@ class OneContext:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         open_ai_key: Optional[str] = None,
+        anthropic_api_key: Optional[str] = None,
         extra_headers: Optional[Dict[str, Any]] = None,
     ):
         """
@@ -26,6 +27,9 @@ class OneContext:
 
         open_api_key : Optional[str], optional
             The OPEN AI API key for authenticating requests to the OPEN AI.
+
+        anthropic_api_key : Optional[str], optional
+            The Anthropic API key for authenticating requests to the Anthropic.
 
         base_url : str, optional
             The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v5/".
@@ -54,6 +58,9 @@ class OneContext:
 
         if open_ai_key:
             extra_headers.update({"OPENAI-API-KEY": open_ai_key})
+
+        if anthropic_api_key:
+            extra_headers.update({"ANTHROPIC-API-KEY": anthropic_api_key})
 
         base_url = base_url or "https://app.onecontext.ai/api/v5/"
         self._client = ApiClient(api_key, extra_headers=extra_headers)
