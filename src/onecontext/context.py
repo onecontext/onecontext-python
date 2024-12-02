@@ -665,7 +665,7 @@ class Context:
     def extract_from_search(
         self,
         query: str,
-        schema: Union[Dict[str, Any], PydanticV2BaseModel],
+        schema: Union[Dict[str, Any], type],
         extraction_prompt: str,
         *,
         top_k: int = 10,
@@ -758,7 +758,7 @@ class Context:
 
     def extract_from_chunks(
         self,
-        schema: Union[Dict[str, Any], PydanticV2BaseModel],
+        schema: Union[Dict[str, Any], type],
         extraction_prompt: str,
         *,
         metadata_filters: Optional[Dict[str, Any]] = None,
