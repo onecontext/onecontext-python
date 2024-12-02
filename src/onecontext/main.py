@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from onecontext.client import URLS, ApiClient, ApiError, ConfigurationError
 from onecontext.context import Context

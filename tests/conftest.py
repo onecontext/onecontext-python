@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import List
 
 import pytest
 
@@ -47,7 +48,7 @@ def test_files_directory() -> str:
 
 
 @pytest.fixture
-def file_paths(test_files_directory) -> list[str]:
+def file_paths(test_files_directory) -> List[str]:
     return [
         os.path.join(test_files_directory, f)
         for f in os.listdir(test_files_directory)

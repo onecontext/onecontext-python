@@ -10,11 +10,12 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, get_args
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
+from typing_extensions import Literal, Protocol, get_args
 from urllib3.util import Retry
 
 from onecontext.client import URLS, ApiClient
@@ -587,7 +588,7 @@ class Context:
         data = {"fileId": file_id}
         self._client.delete(self._urls.context_files(), json=data)
 
-    def update_file_meta(self, file_id: str, update_object: dict[str, Any]) -> None:
+    def update_file_meta(self, file_id: str, update_object: Dict[str, Any]) -> None:
         # check the provided update object is json serializable, and flatten it
         update_object = parse_metadata(update_object, flatten=True)
         # check the keys for rogue separators
