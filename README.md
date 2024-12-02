@@ -182,7 +182,7 @@ context = oc.Context("my_context")
 output_dict, chunks = context.extract_from_search(
     query="tell me about rockbands",
     schema=RockBandInfo, # you can pass a pydantic (v2) model or a json schema dict
-    extraction_prompt="Output only JSON matching the provided schema about the rockbands",
+    extraction_prompt="Output only JSON matching the provided schema about the rockbands. If the text does not contain such information use **NO_DATA** as the default"",
 )
 
 rock_band = RockBandInfo.model_validate(output_dict)
@@ -198,7 +198,7 @@ You can also extract structured output directly from chunks without performing a
 ```python
 output_dict, chunks = context.extract_from_chunks(
     schema=RockBandInfo, # you can pass a pydantic model or a json schema dict
-    extraction_prompt="Output only JSON matching the provided schema about the rockbands",
+    extraction_prompt="Output only JSON matching the provided schema about the rockbands. If the text does not contain such information use **NO_DATA** as the default",
     metadata_filters = {"tag" : {"$eq" : "rockband"}}
 )
 
@@ -211,7 +211,7 @@ output extraction (bes sure to set the Anthropic Api key on the settings ![page]
 ```python
 output_dict, chunks = context.extract_from_chunks(
     schema=RockBandInfo, # you can pass a pydantic model or a json schema dict
-    extraction_prompt="Output only JSON matching the provided schema about the rockbands",
+    extraction_prompt="Output only JSON matching the provided schema about the rockbands. If the text does not contain such information use **NO_DATA** as the default",
     metadata_filters = {"tag" : {"$eq" : "rockband"}}
     model="claude-35"
 )
