@@ -205,6 +205,20 @@ output_dict, chunks = context.extract_from_chunks(
 rock_band = RockBandInfo.model_validate(output_dict)
 ```
 
+In addtion both of these methods take model parameter to be used for structured
+output extraction (bes sure to set the Anthropic Api key on the settings ![page](https://app.onecontext.ai/settings/account)):
+
+```python
+output_dict, chunks = context.extract_from_chunks(
+    schema=RockBandInfo, # you can pass a pydantic model or a json schema dict
+    extraction_prompt="Output only JSON matching the provided schema about the rockbands",
+    metadata_filters = {"tag" : {"$eq" : "rockband"}}
+    model="claude-35"
+)
+
+rock_band = RockBandInfo.model_validate(output_dict)
+```
+
 # OneContext Structured Query Language
 
 OneContext allows you to use a custom "Structured Query Language" to filter

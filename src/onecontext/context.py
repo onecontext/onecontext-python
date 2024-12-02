@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, get_args
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -49,6 +49,8 @@ SUPPORTED_FILE_TYPES = (
 
 
 MAX_UPLOAD = 15_000
+
+StructuredOutputModel = Literal["gpt-4o-mini", "gpt-4o", "claude-35"]
 
 
 def guess_mime_type(file_path: Union[str, Path]):
@@ -584,7 +586,7 @@ class Context:
     def delete_file(self, file_id: str) -> None:
         data = {"fileId": file_id}
         self._client.delete(self._urls.context_files(), json=data)
-        
+
     def update_file_meta(self, file_id: str, update_object: dict[str, Any]) -> None:
         # check the provided update object is json serializable, and flatten it
         update_object = parse_metadata(update_object, flatten=True)
@@ -594,7 +596,7 @@ class Context:
         data = {"fileId": file_id, "updateObject": update_object}
         # ship it
         self._client.post(self._urls.update_file_meta(), json=data)
-        
+
     def clear_file_meta(self, file_id: str) -> None:
         data = {"fileId": file_id}
         self._client.post(self._urls.clear_file_meta(), json=data)
@@ -671,6 +673,7 @@ class Context:
         rrf_k: int = 60,
         include_embedding: bool = False,
         metadata_filters: Optional[dict] = None,
+        model: StructuredOutputModel = "gpt-4o-mini",
     ) -> Tuple[dict, List[Chunk]]:
         """
         Runs a hybrid query using semantic and full-text search
@@ -698,6 +701,8 @@ class Context:
             Flag to include the embedding in the returned Chunk objects, by default False.
         metadata_filters : Optional[dict[str, Any]], optional
             A dictionary of filters based on metadata to apply to the chunk retrieval.
+        model: Literal[str]
+            the model to use for structured output generation
 
         Returns
         -------
@@ -705,6 +710,9 @@ class Context:
             A list of Chunk objects that are the result of running the query with the specified parameters.
 
         """
+
+        if model not in get_args(StructuredOutputModel):
+            raise ValueError(f"model must be one of {get_args(StructuredOutputModel)}")
 
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
@@ -736,7 +744,7 @@ class Context:
             "topK": top_k,
             "includeEmbedding": include_embedding,
             "contextName": self.name,
-            "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt},
+            "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt, "model": model},
         }
 
         if metadata_filters is not None:
@@ -756,6 +764,7 @@ class Context:
         limit: int = 50,
         include_embedding: bool = False,
         file_id: Optional[str] = None,
+        model: StructuredOutputModel = "gpt-4o-mini",
     ) -> Tuple[dict, List[Chunk]]:
         """
         Retrieves a list of Chunk objects from the context with optional filters.
@@ -774,6 +783,8 @@ class Context:
             Flag to include the embedding in the returned Chunk objects, by default False.
         file_id : Optional[str], optional
             A specific file ID to filter chunks by, by default None.
+        model: Literal[str]
+            the model to use for structured output generation
 
         Returns
         -------
@@ -781,6 +792,9 @@ class Context:
             A list of Chunk objects
 
         """
+
+        if model not in get_args(StructuredOutputModel):
+            raise ValueError(f"model must be one of {get_args(StructuredOutputModel)}")
 
         if isinstance(schema, PydanticV2BaseModel):
             schema = schema.model_json_schema()
@@ -796,7 +810,7 @@ class Context:
             "contextName": self.name,
             "limit": limit,
             "includeEmbedding": include_embedding,
-            "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt},
+            "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt, "model": model},
         }
 
         if metadata_filters is not None:
@@ -810,4 +824,3 @@ class Context:
         output = out["output"]
         chunks = [Chunk(**chunk_dict) for chunk_dict in chunk_dicts]
         return output, chunks
-
