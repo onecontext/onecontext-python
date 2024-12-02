@@ -675,6 +675,7 @@ class Context:
         include_embedding: bool = False,
         metadata_filters: Optional[dict] = None,
         model: StructuredOutputModel = "gpt-4o-mini",
+        temperature: Optional[int] = None,
     ) -> Tuple[dict, List[Chunk]]:
         """
         Runs a hybrid query using semantic and full-text search
@@ -704,6 +705,8 @@ class Context:
             A dictionary of filters based on metadata to apply to the chunk retrieval.
         model: Literal[str]
             the model to use for structured output generation
+        temperature: Optional[int],
+            the temperature parameter for the model
 
         Returns
         -------
@@ -748,6 +751,9 @@ class Context:
             "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt, "model": model},
         }
 
+        if temperature is not None:
+            params["structuredOutputRequest"].update({"temperature": temperature})
+
         if metadata_filters is not None:
             params.update({"metadataFilters": metadata_filters})
 
@@ -766,6 +772,7 @@ class Context:
         include_embedding: bool = False,
         file_id: Optional[str] = None,
         model: StructuredOutputModel = "gpt-4o-mini",
+        temperature: Optional[int] = None,
     ) -> Tuple[dict, List[Chunk]]:
         """
         Retrieves a list of Chunk objects from the context with optional filters.
@@ -786,6 +793,8 @@ class Context:
             A specific file ID to filter chunks by, by default None.
         model: Literal[str]
             the model to use for structured output generation
+        temperature: Optional[int],
+            the temperature parameter for the model
 
         Returns
         -------
@@ -813,6 +822,9 @@ class Context:
             "includeEmbedding": include_embedding,
             "structuredOutputRequest": {"structuredOutputSchema": schema, "prompt": extraction_prompt, "model": model},
         }
+
+        if temperature is not None:
+            data["structuredOutputRequest"].update({"temperature": temperature})
 
         if metadata_filters is not None:
             data.update({"metadataFilters": metadata_filters})

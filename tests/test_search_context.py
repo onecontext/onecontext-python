@@ -112,6 +112,7 @@ def test_extract(
         top_k=10,
         metadata_filters=metadata_filters,
         model=model,
+        temperature=0,
     )
 
     assert len(chunks) == expected_count
@@ -119,7 +120,7 @@ def test_extract(
     PaperInfo.model_validate(output)
 
     output, chunks = context_with_files.extract_from_chunks(
-        schema=PaperInfo, extraction_prompt="OUTPUT only json", model=model
+        schema=PaperInfo, extraction_prompt="OUTPUT only json", model=model, temperature=0
     )
 
     PaperInfo.model_validate(output)
