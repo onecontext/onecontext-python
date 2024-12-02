@@ -28,8 +28,8 @@ class OneContext:
         open_api_key : Optional[str], optional
             The OPEN AI API key for authenticating requests to the OPEN AI.
 
-        open_api_key : Optional[str], optional
-            The Anthropic API key for authenticating requests to the OPEN AI.
+        anthropic_api_key : Optional[str], optional
+            The Anthropic API key for authenticating requests to the Anthropic.
 
         base_url : str, optional
             The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v5/".
