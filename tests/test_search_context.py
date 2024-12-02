@@ -1,10 +1,10 @@
 import os
+from typing import List
 
 import pytest
 from helpers.utils import wait_for_file_processing
 from pydantic import BaseModel, Field
 
-from onecontext.client import ApiError
 from onecontext.context import Context, StructuredOutputModel
 from onecontext.main import OneContext
 
@@ -103,7 +103,7 @@ def test_extract(
     context_with_files: Context, query: str, metadata_filters: dict, expected_count: int, model: StructuredOutputModel
 ):
     class PaperInfo(BaseModel):
-        topics: list[str] = Field(description="the topics of the paper")
+        topics: List[str] = Field(description="the topics of the paper")
 
     output, chunks = context_with_files.extract_from_search(
         schema=PaperInfo,
