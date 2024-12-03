@@ -252,6 +252,7 @@ class Context:
         file_paths: Union[List[str], List[Path]],
         metadata: Optional[List[dict]] = None,
         max_chunk_size: int = 200,
+        force_ocr: bool = False,
         flatten_metadata: bool = False,
         max_workers: int = 10,
         verbose: Optional[bool] = None,
@@ -339,6 +340,7 @@ class Context:
                 "contextName": self.name,
                 "contextId": self.id,
                 "maxChunkSize": max_chunk_size,
+                "forceOcr": force_ocr,
                 "files": batch,
             }
 
@@ -444,6 +446,7 @@ class Context:
         directory: Union[str, Path],
         metadata: Optional[dict] = None,
         max_chunk_size: int = 200,
+        force_ocr: bool = False,
         flatten_metadata: bool = False,
         max_workers: int = 10,
     ) -> List[str]:
@@ -463,6 +466,9 @@ class Context:
 
         max_chunk_size : int, optional
             The maximum size of the resulting chunks in characters
+
+        force_ocr: bool
+            force OCR based extraction
 
         flatten_metadata: bool
             Whether to flatten metadata dicts with a "_" separator
@@ -497,6 +503,8 @@ class Context:
         file_ids = self.upload_files(
             file_paths=files_to_upload,
             metadata=metadata_list,
+            max_chunk_size=max_chunk_size,
+            force_ocr=force_ocr,
             flatten_metadata=flatten_metadata,
             max_workers=max_workers,
         )
