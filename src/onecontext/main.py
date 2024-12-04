@@ -32,7 +32,7 @@ class OneContext:
             The Anthropic API key for authenticating requests to the Anthropic.
 
         base_url : str, optional
-            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v5/".
+            The base URL for the OneContext API. Defaults to "https://app.onecontext.ai/v6/".
             Can be overridden with the environment variable 'ONECONTEXT_API_KEY'
 
         Raises
@@ -62,7 +62,7 @@ class OneContext:
         if anthropic_api_key:
             extra_headers.update({"ANTHROPIC-API-KEY": anthropic_api_key})
 
-        base_url = base_url or "https://app.onecontext.ai/api/v5/"
+        base_url = base_url or "https://app.onecontext.ai/api/v6/"
         self._client = ApiClient(api_key, extra_headers=extra_headers)
         self._urls = URLS(base_url)
 
