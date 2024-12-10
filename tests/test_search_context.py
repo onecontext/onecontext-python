@@ -21,7 +21,7 @@ def context(client: OneContext):
         client.delete_context(context_name)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def context_with_files(context: Context, file_paths: list):
     metadata = [{"file_tag": "file_1"}, {"file_tag": "file_2"}]
     context.upload_files(file_paths, metadata=metadata, max_chunk_size=200)

@@ -30,8 +30,6 @@ def download_file(file_url, local_path):
 def test_upload_files(client: OneContext, context: Context, file_paths: list):
     metadata = [{"file_tag": "file_1"}, {"file_tag": "file_2"}]
 
-    # file_paths = [file_paths[0]]
-    # metadata = [metadata[0]]
     file_ids = context.upload_files(file_paths, metadata=metadata)
 
     wait_for_file_processing(context)
