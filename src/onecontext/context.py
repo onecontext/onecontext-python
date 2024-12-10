@@ -147,6 +147,7 @@ class Context:
         skip=0,
         limit=500,
         sort="date_created",
+        metadata_filters: Optional[Dict[str, Any]] = None,
         get_download_urls: bool = False,
     ) -> List[File]:
         """
@@ -162,6 +163,8 @@ class Context:
             The number of files to skip (default is 0).
         limit : int, optional
             The maximum number of files to return (default is 20).
+        metadata_filters : dict[str, Any]
+            Filter the files you return with OneContext Structured Query Language.
         sort : str, optional
             The field to sort by (default is "date_created").
             Reverse with "-date_created"
@@ -187,6 +190,7 @@ class Context:
                 "limit": limit,
                 "sort": sort,
                 "getDownloadUrls": get_download_urls,
+                "metadataFilters": metadata_filters,
                 "fileIds": file_ids,
                 "fileNames": file_names,
             },

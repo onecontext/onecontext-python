@@ -9,7 +9,7 @@ from onecontext.context import Context, StructuredOutputModel
 from onecontext.main import OneContext
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def context(client: OneContext):
     context_name = f"test_context_{__name__}"
 
@@ -21,7 +21,7 @@ def context(client: OneContext):
         client.delete_context(context_name)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def context_with_files(context: Context, file_paths: list):
     metadata = [{"file_tag": "file_1"}, {"file_tag": "file_2"}]
     context.upload_files(file_paths, metadata=metadata, max_chunk_size=200)
@@ -29,6 +29,22 @@ def context_with_files(context: Context, file_paths: list):
     yield context
     files = context.list_files()
     assert len(files) > 0
+
+
+def test_list_files(context_with_files: Context):
+    metadata_filters = {"file_tag": {"$eq": "file_1"}}
+    files = context_with_files.list_files(metadata_filters=metadata_filters)
+
+    for file in files:
+        assert file.metadata_json
+        assert file.metadata_json.get("file_tag") == "file_1"
+
+    metadata_filters = {"file_tag": {"$eq": "file_2"}}
+    files = context_with_files.list_files(metadata_filters=metadata_filters)
+
+    for file in files:
+        assert file.metadata_json
+        assert file.metadata_json.get("file_tag") == "file_2"
 
 
 def test_list_chunks(context_with_files: Context):
