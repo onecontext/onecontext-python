@@ -9,7 +9,7 @@ from onecontext.context import Context, StructuredOutputModel
 from onecontext.main import OneContext
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def context(client: OneContext):
     context_name = f"test_context_{__name__}"
 

@@ -12,27 +12,27 @@ from onecontext.main import OneContext
 load_dotenv()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def api_key():
     return os.getenv("ONECONTEXT_API_KEY")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def base_url():
-    return os.getenv("ONECONTEXT_BASE_URL", "https://app.onecontext.ai/api/v5/")
+    return os.getenv("ONECONTEXT_BASE_URL", "https://app.onecontext.ai/api/v6/")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def bypass():
     return os.getenv("BYPASS")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def anthropic_api_key():
     return os.getenv("ANTHROPIC_API_KEY")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def client(api_key, base_url, bypass, anthropic_api_key):
     extra_headers = {"x-vercel-protection-bypass": bypass}
 
@@ -42,12 +42,12 @@ def client(api_key, base_url, bypass, anthropic_api_key):
     return client
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_files_directory() -> str:
     return os.path.join(os.path.dirname(__file__), "files")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def file_paths(test_files_directory) -> List[str]:
     return [
         os.path.join(test_files_directory, f)
