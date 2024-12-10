@@ -101,6 +101,9 @@ def test_search_chunks_parametrized(
 def test_extract(context_with_files: Context, query: str, metadata_filters: dict, expected_count: int):
     class PaperInfo(BaseModel):
         topics: list[str] = Field(description="the topics of the paper")
+    class PaperInfo(BaseModel):
+        title: str = Field(description="a title of a 1970s rockband")
+        lyrics: str = Field(description="lyrics to their absolute banger of a song")
 
     output, chunks = context_with_files.extract_from_search(
         schema=PaperInfo, extraction_prompt="OUTPUT only json", query=query, top_k=10, metadata_filters=metadata_filters

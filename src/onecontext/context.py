@@ -2,6 +2,7 @@ import dataclasses
 import json
 import mimetypes
 import os
+from enum import Enum
 import sys
 import tempfile
 import time
@@ -10,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -49,6 +50,11 @@ SUPPORTED_FILE_TYPES = (
 
 
 MAX_UPLOAD = 15_000
+
+class ModelEnum(Enum): 
+    CLAUDE_35 = "claude-3.5"
+    GPT_4O = "gpt-4o"
+    GPT_4O_MINI = "gpt-4o-mini" 
 
 
 def guess_mime_type(file_path: Union[str, Path]):
@@ -142,8 +148,9 @@ class Context:
         file_ids: Optional[list] = None,
         file_names: Optional[list] = None,
         skip=0,
-        limit=500,
+        limit=50,
         sort="date_created",
+        metadata_filters: Optional[Dict[str, Any]] = None,
         get_download_urls: bool = False,
     ) -> List[File]:
         """
@@ -184,6 +191,7 @@ class Context:
                 "limit": limit,
                 "sort": sort,
                 "getDownloadUrls": get_download_urls,
+                "metadataFilters": metadata_filters,
                 "fileIds": file_ids,
                 "fileNames": file_names,
             },
@@ -671,6 +679,7 @@ class Context:
         rrf_k: int = 60,
         include_embedding: bool = False,
         metadata_filters: Optional[dict] = None,
+        model: Optional[ModelEnum] = ModelEnum.CLAUDE_35,
     ) -> Tuple[dict, List[Chunk]]:
         """
         Runs a hybrid query using semantic and full-text search
