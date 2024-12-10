@@ -31,6 +31,22 @@ def context_with_files(context: Context, file_paths: list):
     assert len(files) > 0
 
 
+def test_list_files(context_with_files: Context):
+    metadata_filters = {"file_tag": {"$eq": "file_1"}}
+    files = context_with_files.list_files(metadata_filters=metadata_filters)
+
+    for file in files:
+        assert file.metadata_json
+        assert file.metadata_json.get("file_tag") == "file_1"
+
+    metadata_filters = {"file_tag": {"$eq": "file_2"}}
+    files = context_with_files.list_files(metadata_filters=metadata_filters)
+
+    for file in files:
+        assert file.metadata_json
+        assert file.metadata_json.get("file_tag") == "file_2"
+
+
 def test_list_chunks(context_with_files: Context):
     files = context_with_files.list_files()
 
